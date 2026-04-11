@@ -263,6 +263,84 @@
             color: #c9d1d9;
             cursor: pointer;
         }
+
+        /* Wireshark-style protocol dissector */
+        .wireshark-panel {
+            background: #1a1a2e;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .wireshark-header {
+            background: #16213e;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            border-bottom: 1px solid #30363d;
+        }
+        .wireshark-header .shark-icon { font-size: 1rem; }
+        .wireshark-header .title {
+            font-size: 0.75rem;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .wireshark-header .packet-info {
+            font-size: 0.65rem;
+            color: #8b949e;
+            margin-left: auto;
+        }
+        .protocol-tree {
+            padding: 0.5rem 0;
+            font-size: 0.72rem;
+            line-height: 1.7;
+        }
+        .proto-node {
+            padding: 0.15rem 1rem;
+            cursor: default;
+            white-space: nowrap;
+        }
+        .proto-node:hover {
+            background: rgba(88, 166, 255, 0.08);
+        }
+        .proto-layer {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .proto-field {
+            color: #c9d1d9;
+        }
+        .proto-value {
+            color: #3fb950;
+        }
+        .proto-warn {
+            color: #d29922;
+        }
+        .proto-fail {
+            color: #f85149;
+        }
+        .proto-indent-1 { padding-left: 2.2rem; }
+        .proto-indent-2 { padding-left: 3.4rem; }
+        .proto-indent-3 { padding-left: 4.6rem; }
+        .proto-separator {
+            border-top: 1px solid #21262d;
+            margin: 0.2rem 0;
+        }
+        .hex-dump {
+            background: #0d1117;
+            border-top: 1px solid #30363d;
+            padding: 0.5rem 1rem;
+            font-size: 0.65rem;
+            color: #484f58;
+            line-height: 1.6;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            overflow-x: auto;
+        }
+        .hex-dump .hex-highlight { color: #58a6ff; }
+        .hex-dump .hex-ascii { color: #8b949e; margin-left: 1rem; }
     </style>
 </head>
 <body>
@@ -280,7 +358,7 @@
     <!-- Diagram -->
     <div class="diagram">
         <div class="endpoint" id="client">
-            <div class="icon">&#x1F310;</div>
+            <div class="icon">&#x1F4BB;</div>
             <div class="label">Client</div>
         </div>
         <div class="arrow-area">
@@ -290,7 +368,7 @@
             </div>
         </div>
         <div class="endpoint" id="server">
-            <div class="icon">&#x1F512;</div>
+            <div class="icon">&#x1F3E6;</div>
             <div class="label">Server</div>
         </div>
     </div>
@@ -306,6 +384,17 @@
     <div id="step-indicator">Step 1</div>
     <div class="step-description" id="step-description">
         Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.
+    </div>
+
+    <!-- Wireshark protocol dissector -->
+    <div class="wireshark-panel" id="wireshark-panel">
+        <div class="wireshark-header">
+            <span class="shark-icon">&#x1F988;</span>
+            <span class="title">Protocol Dissector</span>
+            <span class="packet-info" id="packet-info">Packet #1 &middot; Client &rarr; Server</span>
+        </div>
+        <div class="protocol-tree" id="protocol-tree"></div>
+        <div class="hex-dump" id="hex-dump"></div>
     </div>
 
     <!-- Status messages -->
@@ -369,6 +458,147 @@
             noFs: document.getElementById('toggle-no-fs'),
             cbc: document.getElementById('toggle-cbc'),
         };
+
+        const wiresharkData = [
+            { // Step 1 - ClientHello
+                packetInfo: 'Packet #1 &middot; Client &rarr; Server &middot; 517 bytes',
+                tree: [
+                    { cls: 'proto-layer', text: '&#9660; TLSv1.3 Record Layer: Handshake Protocol: Client Hello' },
+                    { cls: 'proto-field proto-indent-1', text: 'Content Type: <span class="proto-value">Handshake (22)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Version: <span class="proto-value">TLS 1.0 (0x0301)</span> <span class="proto-warn">&larr; legacy, real version in extension</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Length: <span class="proto-value">512</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer', text: '&#9660; Handshake Protocol: Client Hello' },
+                    { cls: 'proto-field proto-indent-1', text: 'Handshake Type: <span class="proto-value">Client Hello (1)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Random: <span class="proto-value">7f3a9b2c...e8d1 (32 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Session ID Length: <span class="proto-value">32</span> <span class="proto-warn">&larr; compatibility with middleboxes</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Cipher Suites (3 suites)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Cipher Suite: <span class="proto-value">TLS_AES_256_GCM_SHA384 (0x1302)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Cipher Suite: <span class="proto-value">TLS_AES_128_GCM_SHA256 (0x1301)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Cipher Suite: <span class="proto-value">TLS_CHACHA20_POLY1305_SHA256 (0x1303)</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Extension: supported_versions (43)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Supported Version: <span class="proto-value">TLS 1.3 (0x0304)</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Extension: key_share (51)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Key Share Group: <span class="proto-value">x25519 (0x001d)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Key Share: <span class="proto-value">04a1b2c3...9f8e (32 bytes)</span> <span class="proto-warn">&larr; client ECDHE public key</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Extension: signature_algorithms (13)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Algorithm: <span class="proto-value">ecdsa_secp256r1_sha256 (0x0403)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Algorithm: <span class="proto-value">rsa_pss_rsae_sha256 (0x0804)</span>' },
+                ],
+                hex: '<span class="hex-highlight">16 03 01</span> 02 00 01 00 01 fc 03 03 <span class="hex-highlight">7f 3a 9b 2c</span>  <span class="hex-ascii">........|.:..,</span>\nd4 e1 8a 6f 29 73 b5 17 42 8c a0 3e 55 f8 91 c2  <span class="hex-ascii">...o)s..B..>U...</span>\n20 <span class="hex-highlight">e3 b0 c4 42</span> 98 fc 1c 14 9a fb f4 c8 99 6f b9  <span class="hex-ascii"> ...B........o.</span>\n24 27 ae 41 e4 64 9b 93 4c a4 95 99 1b 78 52 d6  <span class="hex-ascii">$\'.A.d..L....xR.</span>'
+            },
+            { // Step 2 - ServerHello
+                packetInfo: 'Packet #2 &middot; Server &rarr; Client &middot; 155 bytes',
+                tree: [
+                    { cls: 'proto-layer', text: '&#9660; TLSv1.3 Record Layer: Handshake Protocol: Server Hello' },
+                    { cls: 'proto-field proto-indent-1', text: 'Content Type: <span class="proto-value">Handshake (22)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Version: <span class="proto-value">TLS 1.2 (0x0303)</span> <span class="proto-warn">&larr; legacy field</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer', text: '&#9660; Handshake Protocol: Server Hello' },
+                    { cls: 'proto-field proto-indent-1', text: 'Random: <span class="proto-value">a8c4e1f0...3b7d (32 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Cipher Suite: <span class="proto-value">TLS_AES_256_GCM_SHA384 (0x1302)</span> &#9989;' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Extension: supported_versions (43)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Selected Version: <span class="proto-value">TLS 1.3 (0x0304)</span> <span class="proto-warn">&larr; actual version</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Extension: key_share (51)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Key Share Group: <span class="proto-value">x25519 (0x001d)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Key Share: <span class="proto-value">05d2e3f4...7a6b (32 bytes)</span> <span class="proto-warn">&larr; server ECDHE public key</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer', text: '&#9660; [Encrypted Extensions]' },
+                    { cls: 'proto-field proto-indent-1', text: '<span class="proto-warn">Remaining handshake messages are encrypted with handshake keys</span>' },
+                ],
+                hex: '<span class="hex-highlight">16 03 03</span> 00 9b 02 00 00 97 03 03 <span class="hex-highlight">a8 c4 e1 f0</span>  <span class="hex-ascii">................</span>\n6a 2b 19 d7 83 4e f5 c0 b1 a2 38 9d e7 54 6c 0f  <span class="hex-ascii">j+...N....8..Tl.</span>\n20 <span class="hex-highlight">e3 b0 c4 42</span> 98 fc 1c 14 9a fb f4 c8 99 6f b9  <span class="hex-ascii"> ...B........o.</span>\n<span class="hex-highlight">13 02</span> 00 00 2f 00 2b 00 02 <span class="hex-highlight">03 04</span> 00 33 00 24 00  <span class="hex-ascii">..../.+......3.$.</span>'
+            },
+            { // Step 3 - Certificate Verify
+                packetInfo: 'Packet #3 &middot; Server &rarr; Client &middot; 2,847 bytes',
+                tree: [
+                    { cls: 'proto-layer', text: '&#9660; TLSv1.3 Record Layer: Handshake Protocol: Certificate' },
+                    { cls: 'proto-field proto-indent-1', text: 'Content Type: <span class="proto-value">Application Data (23)</span> <span class="proto-warn">&larr; encrypted, appears as app data</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer', text: '&#9660; Handshake Protocol: Certificate (decrypted)' },
+                    { cls: 'proto-field proto-indent-1', text: 'Certificate Request Context: <span class="proto-value">(empty)</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Certificate Chain (3 entries)' },
+                    { cls: 'proto-field proto-indent-2', text: 'Leaf: <span class="proto-value">CN=www.example.com</span>' },
+                    { cls: 'proto-field proto-indent-3', text: 'Issuer: <span class="proto-value">CN=R11, O=Let\'s Encrypt</span>' },
+                    { cls: 'proto-field proto-indent-3', text: 'Validity: <span class="proto-value">2026-03-15 to 2026-06-13</span>' },
+                    { cls: 'proto-field proto-indent-3', text: 'Public Key: <span class="proto-value">EC (prime256v1, 256 bit)</span>' },
+                    { cls: 'proto-field proto-indent-3', text: 'Signature Algorithm: <span class="proto-value">ecdsa-with-SHA256</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Intermediate: <span class="proto-value">CN=R11, O=Let\'s Encrypt</span>' },
+                    { cls: 'proto-field proto-indent-3', text: 'Issuer: <span class="proto-value">CN=ISRG Root X1</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Root: <span class="proto-value">CN=ISRG Root X1</span> <span class="proto-warn">&larr; pre-trusted in browser</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer', text: '&#9660; Handshake Protocol: Certificate Verify' },
+                    { cls: 'proto-field proto-indent-1', text: 'Signature Algorithm: <span class="proto-value">ecdsa_secp256r1_sha256 (0x0403)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Signature: <span class="proto-value">30 45 02 21...f7 8a (71 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Verification: <span class="proto-value">&#9989; Valid — server proved possession of private key</span>' },
+                ],
+                hex: '<span class="hex-highlight">17 03 03</span> 0b 1f 00 00 0b 19 00 00 0b 15 00 0b 10  <span class="hex-ascii">................</span>\n<span class="hex-highlight">30 82 04 6c</span> 30 82 03 54 a0 03 02 01 02 02 12 04  <span class="hex-ascii">0..l0..T........</span>\nc1 2a 8e 7f 5a 9b 30 82 01 22 30 0d 06 09 2a 86  <span class="hex-ascii">.*..Z.0.."0...*.</span>\n48 86 f7 0d 01 01 0b 05 00 30 32 31 0b 30 09 06  <span class="hex-ascii">H........021.0..</span>'
+            },
+            { // Step 4 - Key Derivation
+                packetInfo: 'Internal &middot; No packet on wire &middot; Both sides compute independently',
+                tree: [
+                    { cls: 'proto-layer', text: '&#9660; Key Derivation (HKDF-based Key Schedule)' },
+                    { cls: 'proto-field proto-indent-1', text: '<span class="proto-warn">Not visible on the wire — computed independently by both sides</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Inputs' },
+                    { cls: 'proto-field proto-indent-2', text: 'ECDHE Shared Secret: <span class="proto-value">x25519(client_private, server_public)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Transcript Hash: <span class="proto-value">SHA-384(ClientHello || ServerHello)</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Derived Keys' },
+                    { cls: 'proto-field proto-indent-2', text: 'Client Handshake Key: <span class="proto-value">e3f1a8...c4d2 (32 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Server Handshake Key: <span class="proto-value">9b7c2e...a1f5 (32 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Client Application Key: <span class="proto-value">d4e8b1...7f3a (32 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Server Application Key: <span class="proto-value">2a6c9d...e0b8 (32 bytes)</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Forward Secrecy Guarantee' },
+                    { cls: 'proto-field proto-indent-2', text: 'ECDHE private keys: <span class="proto-value">DESTROYED after derivation</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Session keys: <span class="proto-value">unique to this session, never reused</span>' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">&#9989; Compromise of server long-term key cannot decrypt past sessions</span>' },
+                ],
+                hex: '<span class="hex-highlight">HKDF-Expand-Label(</span>\n  Secret  = ECDHE_shared_secret,\n  Label   = "derived",\n  Context = SHA-384(""),\n  Length  = 48\n<span class="hex-highlight">)</span> &rarr; <span class="hex-highlight">d4 e8 b1 9c 3f 7a 2d 6e 0b c8 a1 f5...</span>'
+            },
+            { // Step 5 - Encrypted Data
+                packetInfo: 'Packet #4+ &middot; Bidirectional &middot; Application Data',
+                tree: [
+                    { cls: 'proto-layer', text: '&#9660; TLSv1.3 Record Layer: Application Data Protocol' },
+                    { cls: 'proto-field proto-indent-1', text: 'Content Type: <span class="proto-value">Application Data (23)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Version: <span class="proto-value">TLS 1.2 (0x0303)</span> <span class="proto-warn">&larr; always 0x0303 on wire</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Length: <span class="proto-value">1,234</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer', text: '&#9660; Decrypted TLS 1.3 (AES-256-GCM)' },
+                    { cls: 'proto-field proto-indent-1', text: 'Actual Content Type: <span class="proto-value">Application Data (23)</span>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; AEAD Construction' },
+                    { cls: 'proto-field proto-indent-2', text: 'Nonce: <span class="proto-value">per-record sequence number XOR IV</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'AAD: <span class="proto-value">record header (5 bytes)</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Ciphertext: <span class="proto-value">1,201 bytes</span>' },
+                    { cls: 'proto-field proto-indent-2', text: 'Auth Tag: <span class="proto-value">16 bytes (GCM integrity tag)</span> <span class="proto-warn">&larr; tamper = rejected</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Decrypted Payload (HTTP/2)' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">GET / HTTP/2</span>' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">Host: www.example.com</span>' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">User-Agent: Mozilla/5.0...</span>' },
+                ],
+                hex: '<span class="hex-highlight">17 03 03</span> 04 d2 <span class="hex-highlight">a3 b7 c1 d5 e9 f2 06 1a 2e 42 56</span>  <span class="hex-ascii">..........B.V</span>\n6a 7e 92 a6 ba ce e2 f6 0a 1e 32 46 5a 6e 82 96  <span class="hex-ascii">j~........2FZn..</span>\naa be d2 e6 fa 0e 22 36 4a 5e 72 86 9a ae c2 d6  <span class="hex-ascii">......"6J^r.....</span>\n<span class="hex-highlight">ea fe 12 26 3a 4e 62 76 8a 9e b2 c6 da ee 02 16</span>  <span class="hex-ascii">...&:Nbv........</span>'
+            },
+            { // Step 6 - Done
+                packetInfo: 'Session established &middot; All pillars active',
+                tree: [
+                    { cls: 'proto-layer', text: '&#9660; TLS 1.3 Session Summary' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Protocol: <span class="proto-value">TLS 1.3 (0x0304)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Cipher Suite: <span class="proto-value">TLS_AES_256_GCM_SHA384</span>' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-layer proto-indent-1', text: '&#9660; Four Pillars Satisfied' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">&#9989; Key Exchange:</span> x25519 ECDHE (ephemeral, forward secret)' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">&#9989; Authentication:</span> ecdsa_secp256r1_sha256 (Let\'s Encrypt chain)' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">&#9989; Encryption:</span> AES-256-GCM (authenticated encryption)' },
+                    { cls: 'proto-field proto-indent-2', text: '<span class="proto-value">&#9989; Integrity:</span> SHA-384 HMAC (per-record authentication tag)' },
+                    { cls: '', text: '<div class="proto-separator"></div>' },
+                    { cls: 'proto-field proto-indent-1', text: 'Handshake completed in: <span class="proto-value">1 round trip (1-RTT)</span>' },
+                    { cls: 'proto-field proto-indent-1', text: 'SSL Labs equivalent: <span class="proto-value">Grade A+</span>' },
+                ],
+                hex: 'Session complete. Every field on this panel maps to a field\nin an SSL Labs report. You now know what each one means.'
+            },
+        ];
 
         const steps = [
             {
@@ -452,6 +682,15 @@
             } else {
                 els.connectionStatus.classList.remove('visible');
             }
+
+            // Wireshark panel
+            const ws = wiresharkData[state.step - 1];
+            document.getElementById('packet-info').innerHTML = ws.packetInfo;
+            const tree = document.getElementById('protocol-tree');
+            tree.innerHTML = ws.tree.map(n =>
+                `<div class="proto-node ${n.cls}">${n.text}</div>`
+            ).join('');
+            document.getElementById('hex-dump').innerHTML = ws.hex;
 
             // Clear messages
             els.failureMessage.classList.remove('visible');
