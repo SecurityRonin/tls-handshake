@@ -9,8 +9,504 @@
     <meta property="og:description" content="Interactive step-by-step TLS 1.3 handshake. Toggle failure scenarios to see what breaks.">
     <meta property="og:type" content="website">
     <link rel="canonical" href="https://tls-handshake.securityronin.com/">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+        h1 {
+            color: #58a6ff;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Pillars */
+        .pillars {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .pillar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.8rem;
+            color: #8b949e;
+            transition: all 0.3s ease;
+        }
+        .pillar.active {
+            border-color: #238636;
+            color: #3fb950;
+            box-shadow: 0 0 12px rgba(63, 185, 80, 0.3);
+        }
+
+        /* Diagram area */
+        .diagram {
+            display: flex;
+            align-items: flex-start;
+            gap: 0;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 1.5rem;
+            min-height: 200px;
+        }
+        .endpoint {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            width: 160px;
+            flex-shrink: 0;
+        }
+        .endpoint .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .endpoint .label { color: #58a6ff; font-size: 0.9rem; font-weight: 600; }
+
+        /* Arrow area */
+        .arrow-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0;
+            min-height: 180px;
+        }
+        .message-arrow {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 0.5rem 0;
+        }
+        .message-arrow.visible { display: flex; }
+        .arrow-line {
+            width: 80%;
+            height: 2px;
+            background: #58a6ff;
+            position: relative;
+            margin: 0.3rem 0;
+        }
+        .arrow-line.right::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: -5px;
+            border: 6px solid transparent;
+            border-left-color: #58a6ff;
+        }
+        .arrow-line.left::after {
+            content: '';
+            position: absolute;
+            left: -2px;
+            top: -5px;
+            border: 6px solid transparent;
+            border-right-color: #58a6ff;
+        }
+        .arrow-label {
+            font-size: 0.7rem;
+            color: #8b949e;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        /* Cert chain */
+        #cert-chain {
+            display: none;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 500px;
+        }
+        #cert-chain.visible { display: block; }
+        .cert-node {
+            padding: 0.4rem 0.8rem;
+            margin: 0.3rem 0;
+            border-left: 3px solid #238636;
+            background: #0d1117;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.75rem;
+        }
+        .cert-node:first-child { border-left-color: #58a6ff; }
+
+        /* Step info */
+        #step-indicator {
+            color: #58a6ff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .step-description {
+            color: #c9d1d9;
+            font-size: 0.85rem;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Connection status */
+        #connection-status {
+            display: none;
+            background: #238636;
+            color: #fff;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        #connection-status.visible { display: block; }
+
+        /* Failure / Warning */
+        #failure-message {
+            display: none;
+            background: #3d1117;
+            border: 1px solid #f85149;
+            color: #f85149;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            max-width: 600px;
+            text-align: center;
+        }
+        #failure-message.visible { display: block; }
+        #warning-message {
+            display: none;
+            background: #2d1f00;
+            border: 1px solid #d29922;
+            color: #d29922;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            max-width: 600px;
+            text-align: center;
+        }
+        #warning-message.visible { display: block; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .controls button {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 0.6rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .controls button:hover { background: #30363d; }
+        .controls button#next-step {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+        .controls button#next-step:hover { background: #2ea043; }
+        .controls button#next-step:disabled {
+            background: #21262d;
+            border-color: #30363d;
+            color: #484f58;
+            cursor: not-allowed;
+        }
+
+        /* Toggles */
+        .toggles {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            max-width: 600px;
+            width: 100%;
+        }
+        .toggles h3 {
+            color: #58a6ff;
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.4rem 0;
+        }
+        .toggle-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #f85149;
+            cursor: pointer;
+        }
+        .toggle-row label {
+            font-size: 0.8rem;
+            color: #c9d1d9;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>TLS Handshake</h1>
+    <h1>TLS 1.3 Handshake</h1>
+    <p class="subtitle">Interactive step-by-step visualisation</p>
+
+    <!-- Pillar indicators -->
+    <div class="pillars">
+        <div class="pillar active" id="pillar-key-exchange">Key Exchange</div>
+        <div class="pillar" id="pillar-authentication">Authentication</div>
+        <div class="pillar" id="pillar-encryption">Encryption</div>
+        <div class="pillar" id="pillar-integrity">Integrity</div>
+    </div>
+
+    <!-- Diagram -->
+    <div class="diagram">
+        <div class="endpoint" id="client">
+            <div class="icon">&#x1F310;</div>
+            <div class="label">Client</div>
+        </div>
+        <div class="arrow-area">
+            <div class="message-arrow visible" id="arrow-display">
+                <div class="arrow-label" id="arrow-label">Cipher suites, ECDHE key share, nonce</div>
+                <div class="arrow-line right" id="arrow-line"></div>
+            </div>
+        </div>
+        <div class="endpoint" id="server">
+            <div class="icon">&#x1F512;</div>
+            <div class="label">Server</div>
+        </div>
+    </div>
+
+    <!-- Cert chain (hidden by default) -->
+    <div id="cert-chain">
+        <div class="cert-node">Root CA (trusted anchor)</div>
+        <div class="cert-node">&nbsp;&nbsp;Intermediate CA</div>
+        <div class="cert-node">&nbsp;&nbsp;&nbsp;&nbsp;Leaf Certificate (server)</div>
+    </div>
+
+    <!-- Step indicator & description -->
+    <div id="step-indicator">Step 1</div>
+    <div class="step-description" id="step-description">
+        Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.
+    </div>
+
+    <!-- Status messages -->
+    <div id="connection-status">Connection secure</div>
+    <div id="failure-message"></div>
+    <div id="warning-message"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button id="next-step">Next Step</button>
+        <button id="reset">Reset</button>
+    </div>
+
+    <!-- What-If Toggles -->
+    <div class="toggles">
+        <h3>What-If Scenarios</h3>
+        <div class="toggle-row">
+            <input type="checkbox" id="toggle-expired-cert">
+            <label for="toggle-expired-cert">Expired certificate</label>
+        </div>
+        <div class="toggle-row">
+            <input type="checkbox" id="toggle-mitm">
+            <label for="toggle-mitm">MITM attempt</label>
+        </div>
+        <div class="toggle-row">
+            <input type="checkbox" id="toggle-no-fs">
+            <label for="toggle-no-fs">No forward secrecy</label>
+        </div>
+        <div class="toggle-row">
+            <input type="checkbox" id="toggle-cbc">
+            <label for="toggle-cbc">CBC cipher mode</label>
+        </div>
+    </div>
+
+    <script>
+        const state = { step: 1, halted: false };
+
+        const pillars = {
+            keyExchange: document.getElementById('pillar-key-exchange'),
+            authentication: document.getElementById('pillar-authentication'),
+            encryption: document.getElementById('pillar-encryption'),
+            integrity: document.getElementById('pillar-integrity'),
+        };
+
+        const els = {
+            stepIndicator: document.getElementById('step-indicator'),
+            stepDescription: document.getElementById('step-description'),
+            arrowDisplay: document.getElementById('arrow-display'),
+            arrowLabel: document.getElementById('arrow-label'),
+            arrowLine: document.getElementById('arrow-line'),
+            certChain: document.getElementById('cert-chain'),
+            connectionStatus: document.getElementById('connection-status'),
+            failureMessage: document.getElementById('failure-message'),
+            warningMessage: document.getElementById('warning-message'),
+            nextStep: document.getElementById('next-step'),
+        };
+
+        const toggles = {
+            expiredCert: document.getElementById('toggle-expired-cert'),
+            mitm: document.getElementById('toggle-mitm'),
+            noFs: document.getElementById('toggle-no-fs'),
+            cbc: document.getElementById('toggle-cbc'),
+        };
+
+        const steps = [
+            {
+                label: 'Step 1',
+                title: 'ClientHello',
+                desc: 'Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.',
+                arrowDir: 'right',
+                arrowText: 'Cipher suites, ECDHE key share, nonce',
+                activePillars: ['keyExchange'],
+            },
+            {
+                label: 'Step 2',
+                title: 'ServerHello',
+                desc: 'Server responds with selected cipher suite, its ECDHE key share, and the server certificate.',
+                arrowDir: 'left',
+                arrowText: 'Selected suite, server key share, certificate',
+                activePillars: ['keyExchange', 'authentication'],
+            },
+            {
+                label: 'Step 3',
+                title: 'Certificate Verify',
+                desc: 'Client verifies the certificate chain: Root CA, Intermediate CA, and the leaf certificate.',
+                arrowDir: 'right',
+                arrowText: 'Verify certificate signature',
+                activePillars: ['keyExchange', 'authentication'],
+                showCertChain: true,
+            },
+            {
+                label: 'Step 4',
+                title: 'Key Derivation',
+                desc: 'Both sides derive the same session key from the ECDHE shared secret using HKDF.',
+                arrowDir: 'right',
+                arrowText: 'HKDF derive session keys',
+                activePillars: ['keyExchange', 'authentication', 'encryption'],
+            },
+            {
+                label: 'Step 5',
+                title: 'Encrypted Data',
+                desc: 'Application data flows encrypted with AEAD (AES-GCM). Every packet carries an HMAC integrity tag.',
+                arrowDir: 'right',
+                arrowText: 'Encrypted packets + HMAC tags',
+                activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'],
+            },
+            {
+                label: 'Step 6',
+                title: 'Handshake Complete',
+                desc: 'All four pillars are satisfied. The TLS 1.3 connection is fully established.',
+                arrowDir: 'right',
+                arrowText: 'Secure channel established',
+                activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'],
+                showStatus: true,
+            },
+        ];
+
+        function render() {
+            const s = steps[state.step - 1];
+
+            // Step indicator
+            els.stepIndicator.textContent = s.label;
+            els.stepDescription.textContent = s.desc;
+
+            // Pillars
+            Object.keys(pillars).forEach(k => pillars[k].classList.remove('active'));
+            s.activePillars.forEach(k => pillars[k].classList.add('active'));
+
+            // Arrow
+            els.arrowDisplay.classList.add('visible');
+            els.arrowLabel.textContent = s.arrowText;
+            els.arrowLine.className = 'arrow-line ' + s.arrowDir;
+
+            // Cert chain
+            if (s.showCertChain) {
+                els.certChain.classList.add('visible');
+            } else {
+                els.certChain.classList.remove('visible');
+            }
+
+            // Connection status
+            if (s.showStatus) {
+                els.connectionStatus.classList.add('visible');
+            } else {
+                els.connectionStatus.classList.remove('visible');
+            }
+
+            // Clear messages
+            els.failureMessage.classList.remove('visible');
+            els.failureMessage.textContent = '';
+            els.warningMessage.classList.remove('visible');
+            els.warningMessage.textContent = '';
+
+            // Check toggles for current step
+            state.halted = false;
+
+            if (state.step === 3 && toggles.expiredCert.checked) {
+                els.failureMessage.textContent = 'Handshake failed: certificate has expired. The server certificate validity period has ended.';
+                els.failureMessage.classList.add('visible');
+                state.halted = true;
+            }
+
+            if (state.step === 3 && toggles.mitm.checked) {
+                els.failureMessage.textContent = 'Handshake failed: MITM detected. Certificate signature mismatch indicates an interception attempt.';
+                els.failureMessage.classList.add('visible');
+                state.halted = true;
+            }
+
+            if (state.step === 4 && toggles.noFs.checked) {
+                els.warningMessage.textContent = 'Warning: no forward secrecy. If the server private key is later compromised, all recorded traffic can be decrypted.';
+                els.warningMessage.classList.add('visible');
+            }
+
+            if (state.step === 5 && toggles.cbc.checked) {
+                els.warningMessage.textContent = 'Warning: CBC mode is vulnerable to padding oracle attacks. Prefer AEAD ciphers like AES-GCM.';
+                els.warningMessage.classList.add('visible');
+            }
+
+            // Disable next if halted or at end
+            els.nextStep.disabled = state.halted || state.step >= 6;
+        }
+
+        document.getElementById('next-step').addEventListener('click', () => {
+            if (state.step < 6 && !state.halted) {
+                state.step++;
+                render();
+            }
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            state.step = 1;
+            state.halted = false;
+            toggles.expiredCert.checked = false;
+            toggles.mitm.checked = false;
+            toggles.noFs.checked = false;
+            toggles.cbc.checked = false;
+            render();
+        });
+
+        // Initial render
+        render();
+    </script>
 </body>
 </html>

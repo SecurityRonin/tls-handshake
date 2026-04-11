@@ -7,7 +7,7 @@ export default defineConfig({
         headless: true,
     },
     webServer: {
-        command: 'python3 -m http.server 3009 --directory web',
+        command: 'node server.js 3009',
         port: 3009,
         reuseExistingServer: true,
         timeout: 10000,
