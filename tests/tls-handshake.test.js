@@ -181,3 +181,120 @@ test.describe('Reset', () => {
         await expect(page.locator('#toggle-expired-cert')).not.toBeChecked();
     });
 });
+
+test.describe('Wireshark Packet List', () => {
+    test('has 6 packet rows', async ({ page }) => {
+        await page.goto('/');
+        const rows = page.locator('.ws-packet-row');
+        await expect(rows).toHaveCount(6);
+    });
+
+    test('packet 1 shows Client Hello', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('.ws-packet-row').first()).toContainText('Client Hello');
+    });
+
+    test('clicking a row highlights it', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:nth-child(2)');
+        await expect(page.locator('.ws-packet-row:nth-child(2)')).toHaveClass(/selected/);
+    });
+
+    test('arrow down moves selection', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:first-child');
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('.ws-packet-row:nth-child(2)')).toHaveClass(/selected/);
+    });
+
+    test('arrow up moves selection', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:nth-child(3)');
+        await page.keyboard.press('ArrowUp');
+        await expect(page.locator('.ws-packet-row:nth-child(2)')).toHaveClass(/selected/);
+    });
+
+    test('selecting row updates detail pane', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:first-child');
+        await expect(page.locator('#ws-detail')).toContainText('Client Hello');
+    });
+
+    test('selecting row updates hex pane', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:first-child');
+        await expect(page.locator('#ws-hex')).not.toBeEmpty();
+    });
+});
+
+test.describe('Wireshark Decrypt', () => {
+    test('Load SSLKEYLOGFILE button exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#load-keys')).toBeVisible();
+    });
+
+    test('before loading: packets 3-6 show Application Data', async ({ page }) => {
+        await page.goto('/');
+        for (let i = 3; i <= 6; i++) {
+            await expect(page.locator(`.ws-packet-row:nth-child(${i}) .ws-info`)).toContainText('Application Data');
+        }
+    });
+
+    test('after loading: packet 3 shows Certificate', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#load-keys');
+        await expect(page.locator('.ws-packet-row:nth-child(3) .ws-info')).toContainText('Certificate');
+    });
+
+    test('after loading: packet 5 protocol changes to HTTP/2', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#load-keys');
+        await expect(page.locator('.ws-packet-row:nth-child(5) .ws-proto')).toContainText('HTTP/2');
+    });
+
+    test('after loading: selecting packet 3 shows certificate detail', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#load-keys');
+        await page.click('.ws-packet-row:nth-child(3)');
+        await expect(page.locator('#ws-detail')).toContainText('Certificate');
+    });
+
+    test('before loading: selecting packet 3 shows encrypted message', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:nth-child(3)');
+        await expect(page.locator('#ws-detail')).toContainText(/[Ee]ncrypted/);
+    });
+
+    test('educational callout appears after loading keys', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#load-keys');
+        await expect(page.locator('#decrypt-callout')).toBeVisible();
+        await expect(page.locator('#decrypt-callout')).toContainText('TLS 1.3 encrypts everything after ServerHello');
+    });
+
+    test('load keys button changes to loaded state', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#load-keys');
+        await expect(page.locator('#load-keys')).toContainText(/loaded|Keys loaded/i);
+    });
+});
+
+test.describe('Wizard Journey Header', () => {
+    test('wizard header exists with 6 steps', async ({ page }) => {
+        await page.goto('/');
+        const steps = page.locator('.wizard-step');
+        await expect(steps).toHaveCount(6);
+    });
+
+    test('selecting packet 1 highlights wizard step 1', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:first-child');
+        await expect(page.locator('.wizard-step').first()).toHaveClass(/active/);
+    });
+
+    test('selecting packet 3 highlights wizard step 3', async ({ page }) => {
+        await page.goto('/');
+        await page.click('.ws-packet-row:nth-child(3)');
+        await expect(page.locator('.wizard-step:nth-child(3)')).toHaveClass(/active/);
+    });
+});
