@@ -1022,10 +1022,11 @@ test.describe('Scenario Protocol Trees — New', () => {
         await expect(page.locator('#ws-detail')).toContainText('encrypted_client_hello');
     });
 
-    test('HSTS: step 5 protocol tree shows Strict-Transport-Security', async ({ page }) => {
+    test('HSTS: step 6 protocol tree shows Strict-Transport-Security (HTTP response row)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-hsts');
-        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
         await expect(page.locator('#ws-detail')).toContainText('Strict-Transport-Security');
     });
 });

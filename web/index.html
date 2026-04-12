@@ -1412,7 +1412,7 @@
                 if (sc.recordTamper && idx === 4) detailNodes = detailScenarioRecordTamper;
                 if (sc.clientAuthFail && idx === 3) detailNodes = detailScenarioClientAuthFail;
                 if (sc.ech          && idx === 0) detailNodes = detailScenarioECH;
-                if (sc.hsts         && idx === 4) detailNodes = detailScenarioHSTS;
+                if (sc.hsts         && idx === 5) detailNodes = detailScenarioHSTS;
             }
 
             els.wsDetail.innerHTML = detailNodes.map(n => {
@@ -1578,7 +1578,7 @@
 
                 // ECH success — fires at step 1 (ClientHello)
                 if (step === 1 && sc.ech) {
-                    els.warningMessage.textContent = 'Encrypted Client Hello (ECH, RFC 9258): the real ClientHello (inner) is encrypted using the server\'s public key published in DNS HTTPS records. The outer ClientHello uses a public cover domain. On-path observers see the cover domain SNI, not the actual target. Requires encrypted DNS (DoH/DoT) to prevent DNS-based SNI leakage. ECH + ESNI together close the SNI privacy gap.';
+                    els.warningMessage.textContent = 'Encrypted Client Hello (ECH): the real ClientHello (inner) is encrypted using the server\'s public key published in DNS HTTPS records. The outer ClientHello uses a public cover domain — on-path observers see only the cover SNI, not the actual target. ECH supersedes the earlier ESNI (Encrypted SNI) draft; they are not complementary — ECH is the current standard that replaced ESNI. Requires encrypted DNS (DoH/DoT) to prevent DNS-based SNI leakage.';
                     els.warningMessage.classList.add('visible');
                 }
 
@@ -1594,11 +1594,13 @@
             els.nextStep.disabled = state.halted || step >= 6;
 
             // Correct pillar state for failure scenarios
-            if (state.halted && !sc.recordTamper) {
+            if (state.halted && !sc.recordTamper && !sc.clientAuthFail) {
                 // Cert failure (expired, MITM, pinning): authentication was not established.
                 // In TLS 1.3 the cert flight is sent encrypted (encryption WAS in use — keep it).
                 // In TLS 1.2 downgrade encryption is not yet active at the cert step (no-op).
                 // Record tamper halts at step 5 — auth was already established at step 3, keep it.
+                // Client auth failure halts at step 4 — SERVER was authenticated at step 3; only
+                // the client cert is missing. The authentication pillar reflects server auth, keep it.
                 pillars.authentication.classList.remove('active');
             }
 
