@@ -1046,8 +1046,8 @@
             els.arrowLine.className = 'arrow-line ' + s.arrowDir;
             els.arrowLabel.className = 'arrow-label dir-' + s.arrowDir;
 
-            // MITM attacker node
-            const mitmVisible = sc.mitm;
+            // Attacker node — shown for any scenario involving an active on-path attacker
+            const mitmVisible = sc.mitm || sc.freak || sc.renego;
             els.mitmAttacker.style.display = mitmVisible ? '' : 'none';
             els.arrowAreaRight.style.display = mitmVisible ? '' : 'none';
             if (mitmVisible) {
