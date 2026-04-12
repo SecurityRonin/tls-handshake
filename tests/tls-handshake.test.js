@@ -114,27 +114,27 @@ test.describe('TLS 1.3 Happy Path', () => {
 test.describe('What-If Toggles', () => {
     test('has toggle for expired certificate', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-expired-cert')).toBeVisible();
+        await expect(page.locator('#scenario-expired-cert')).toBeVisible();
     });
 
     test('has toggle for no forward secrecy', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-no-fs')).toBeVisible();
+        await expect(page.locator('#scenario-tls12')).toBeVisible();
     });
 
     test('has toggle for MITM attempt', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-mitm')).toBeVisible();
+        await expect(page.locator('#scenario-mitm')).toBeVisible();
     });
 
     test('has toggle for CBC mode', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-cbc')).toBeVisible();
+        await expect(page.locator('#scenario-tls12-cbc')).toBeVisible();
     });
 
     test('expired cert: step 3 shows failure', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-expired-cert');
+        await page.click('#scenario-expired-cert');
         await page.click('#next-step');
         await page.click('#next-step');
         await expect(page.locator('#failure-message')).toBeVisible();
@@ -143,7 +143,7 @@ test.describe('What-If Toggles', () => {
 
     test('MITM: step 3 shows interception detected', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-mitm');
+        await page.click('#scenario-mitm');
         await page.click('#next-step');
         await page.click('#next-step');
         await expect(page.locator('#failure-message')).toBeVisible();
@@ -152,27 +152,15 @@ test.describe('What-If Toggles', () => {
 
     test('no forward secrecy: shows warning at step 4', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
+        await page.click('#scenario-tls12');
         for (let i = 0; i < 3; i++) await page.click('#next-step');
         await expect(page.locator('#warning-message')).toBeVisible();
         await expect(page.locator('#warning-message')).toContainText(/forward secrecy|recorded traffic/i);
     });
 
-    test('CBC mode (TLS 1.3): handshake fails at step 2 with failure message', async ({ page }) => {
-        await page.goto('/');
-        await page.click('#toggle-cbc');
-        await page.click('#next-step');
-        await expect(page.locator('#step-indicator')).toContainText('Step 2');
-        await expect(page.locator('#failure-message')).toBeVisible();
-        await expect(page.locator('#failure-message')).toContainText(/CBC|AEAD/i);
-        // Next step must be disabled — handshake halted
-        await expect(page.locator('#next-step')).toBeDisabled();
-    });
-
     test('CBC mode (TLS 1.2 downgrade): shows warning from step 3 onward', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-cbc');
+        await page.click('#scenario-tls12-cbc');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#warning-message')).toBeVisible();
         await expect(page.locator('#warning-message')).toContainText(/CBC|Lucky13|BEAST/i);
@@ -187,11 +175,11 @@ test.describe('Reset', () => {
         await expect(page.locator('#step-indicator')).toContainText('Step 1');
     });
 
-    test('reset clears failure toggles', async ({ page }) => {
+    test('reset clears scenario selection', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-expired-cert');
+        await page.click('#scenario-expired-cert');
         await page.click('#reset');
-        await expect(page.locator('#toggle-expired-cert')).not.toBeChecked();
+        await expect(page.locator('#scenario-none')).toBeChecked();
     });
 });
 
@@ -331,14 +319,14 @@ test.describe('Wizard Journey Header', () => {
 
 test.describe('What-If Scenarios — Extended', () => {
     // ── 1. TLS 1.3 0-RTT Early Data ──────────────────────────────────────────
-    test('0-RTT: checkbox exists', async ({ page }) => {
+    test('0-RTT: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-zero-rtt')).toBeVisible();
+        await expect(page.locator('#scenario-zero-rtt')).toBeVisible();
     });
 
     test('0-RTT: warning appears at step 5 (App Data)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-zero-rtt');
+        await page.click('#scenario-zero-rtt');
         for (let i = 0; i < 4; i++) await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 5');
         await expect(page.locator('#warning-message')).toBeVisible();
@@ -347,28 +335,27 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('0-RTT: next step is NOT disabled (warning only, no halt)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-zero-rtt');
+        await page.click('#scenario-zero-rtt');
         for (let i = 0; i < 4; i++) await page.click('#next-step');
         await expect(page.locator('#next-step')).not.toBeDisabled();
     });
 
     test('0-RTT: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-zero-rtt');
+        await page.click('#scenario-tls12');
         for (let i = 0; i < 4; i++) await page.click('#next-step');
         await expect(page.locator('#warning-message')).not.toContainText('0-RTT Early Data');
     });
 
     // ── 2. Certificate Pinning Failure ────────────────────────────────────────
-    test('cert-pin: checkbox exists', async ({ page }) => {
+    test('cert-pin: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-cert-pin')).toBeVisible();
+        await expect(page.locator('#scenario-cert-pin')).toBeVisible();
     });
 
     test('cert-pin: failure appears at step 3 (Certificate)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-cert-pin');
+        await page.click('#scenario-cert-pin');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 3');
         await expect(page.locator('#failure-message')).toBeVisible();
@@ -377,35 +364,34 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('cert-pin: next step is disabled (halts)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-cert-pin');
+        await page.click('#scenario-cert-pin');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#next-step')).toBeDisabled();
     });
 
     test('cert-pin: authentication pillar is NOT active after halt', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-cert-pin');
+        await page.click('#scenario-cert-pin');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
     });
 
     test('cert-pin: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-cert-pin');
+        await page.click('#scenario-tls12');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#failure-message')).not.toContainText('Certificate pinning failure');
     });
 
     // ── 3. PSK Session Resumption ─────────────────────────────────────────────
-    test('PSK: checkbox exists', async ({ page }) => {
+    test('PSK: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-psk')).toBeVisible();
+        await expect(page.locator('#scenario-psk')).toBeVisible();
     });
 
     test('PSK: warning appears at step 2 (ServerHello)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-psk');
+        await page.click('#scenario-psk');
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 2');
         await expect(page.locator('#warning-message')).toBeVisible();
@@ -414,28 +400,27 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('PSK: next step is NOT disabled (warning only)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-psk');
+        await page.click('#scenario-psk');
         await page.click('#next-step');
         await expect(page.locator('#next-step')).not.toBeDisabled();
     });
 
     test('PSK: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-psk');
+        await page.click('#scenario-tls12');
         await page.click('#next-step');
         await expect(page.locator('#warning-message')).not.toContainText('PSK resumption');
     });
 
     // ── 4. SNI Leakage / No ECH ───────────────────────────────────────────────
-    test('SNI: checkbox exists', async ({ page }) => {
+    test('SNI: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-sni')).toBeVisible();
+        await expect(page.locator('#scenario-sni')).toBeVisible();
     });
 
     test('SNI: warning appears at step 1 (ClientHello)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-sni');
+        await page.click('#scenario-sni');
         await expect(page.locator('#step-indicator')).toContainText('Step 1');
         await expect(page.locator('#warning-message')).toBeVisible();
         await expect(page.locator('#warning-message')).toContainText('SNI leakage');
@@ -443,26 +428,25 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('SNI: next step is NOT disabled (warning only)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-sni');
+        await page.click('#scenario-sni');
         await expect(page.locator('#next-step')).not.toBeDisabled();
     });
 
     test('SNI: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-sni');
+        await page.click('#scenario-tls12');
         await expect(page.locator('#warning-message')).not.toContainText('SNI leakage');
     });
 
     // ── 5. mTLS — Client Certificate ─────────────────────────────────────────
-    test('mTLS: checkbox exists', async ({ page }) => {
+    test('mTLS: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-mtls')).toBeVisible();
+        await expect(page.locator('#scenario-mtls')).toBeVisible();
     });
 
     test('mTLS: warning appears at step 4 (Client Finished)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-mtls');
+        await page.click('#scenario-mtls');
         for (let i = 0; i < 3; i++) await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 4');
         await expect(page.locator('#warning-message')).toBeVisible();
@@ -471,28 +455,27 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('mTLS: next step is NOT disabled (warning only)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-mtls');
+        await page.click('#scenario-mtls');
         for (let i = 0; i < 3; i++) await page.click('#next-step');
         await expect(page.locator('#next-step')).not.toBeDisabled();
     });
 
     test('mTLS: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-mtls');
+        await page.click('#scenario-tls12');
         for (let i = 0; i < 3; i++) await page.click('#next-step');
         await expect(page.locator('#warning-message')).not.toContainText('Mutual TLS');
     });
 
     // ── 6. FREAK / Logjam — Export Cipher Downgrade ──────────────────────────
-    test('FREAK: checkbox exists', async ({ page }) => {
+    test('FREAK: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-freak')).toBeVisible();
+        await expect(page.locator('#scenario-freak')).toBeVisible();
     });
 
     test('FREAK: failure appears at step 2 (ServerHello)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-freak');
+        await page.click('#scenario-freak');
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 2');
         await expect(page.locator('#failure-message')).toBeVisible();
@@ -501,35 +484,34 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('FREAK: next step is disabled (halts)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-freak');
+        await page.click('#scenario-freak');
         await page.click('#next-step');
         await expect(page.locator('#next-step')).toBeDisabled();
     });
 
     test('FREAK: keyExchange pillar is NOT active after halt', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-freak');
+        await page.click('#scenario-freak');
         await page.click('#next-step');
         await expect(page.locator('#pillar-key-exchange')).not.toHaveClass(/active/);
     });
 
     test('FREAK: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-freak');
+        await page.click('#scenario-tls12');
         await page.click('#next-step');
         await expect(page.locator('#failure-message')).not.toContainText('Export cipher downgrade');
     });
 
     // ── 7. TLS Renegotiation Injection ───────────────────────────────────────
-    test('renego: checkbox exists', async ({ page }) => {
+    test('renego: radio exists', async ({ page }) => {
         await page.goto('/');
-        await expect(page.locator('#toggle-renego')).toBeVisible();
+        await expect(page.locator('#scenario-renego')).toBeVisible();
     });
 
     test('renego: warning appears at step 5 (App Data)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-renego');
+        await page.click('#scenario-renego');
         for (let i = 0; i < 4; i++) await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 5');
         await expect(page.locator('#warning-message')).toBeVisible();
@@ -538,15 +520,14 @@ test.describe('What-If Scenarios — Extended', () => {
 
     test('renego: next step is NOT disabled (warning only)', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-renego');
+        await page.click('#scenario-renego');
         for (let i = 0; i < 4; i++) await page.click('#next-step');
         await expect(page.locator('#next-step')).not.toBeDisabled();
     });
 
     test('renego: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
         await page.goto('/');
-        await page.click('#toggle-no-fs');
-        await page.click('#toggle-renego');
+        await page.click('#scenario-tls12');
         for (let i = 0; i < 4; i++) await page.click('#next-step');
         await expect(page.locator('#warning-message')).not.toContainText('Renegotiation injection');
     });
