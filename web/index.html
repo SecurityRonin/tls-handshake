@@ -71,12 +71,17 @@
         }
 
         /* Diagram area */
-        .diagram { display: flex; align-items: flex-start; gap: 0; width: 100%; max-width: 100%; margin-bottom: 1.5rem; min-height: 120px; }
+        .diagram { display: flex; align-items: flex-start; gap: 0; width: 100%; max-width: 100%; margin-bottom: 1.5rem; min-height: 120px; overflow-x: auto; }
         .endpoint { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1rem 0.8rem; text-align: center; width: 140px; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .endpoint { width: 80px; padding: 0.6rem 0.4rem; }
+            .endpoint .icon { font-size: 1.4rem; }
+            .endpoint .label { font-size: 0.7rem; }
+        }
         .endpoint .icon { font-size: 2rem; margin-bottom: 0.3rem; }
         .endpoint .label { color: #58a6ff; font-size: 0.85rem; font-weight: 600; }
         .arrow-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem 0; min-height: 100px; }
-        .message-arrow { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0.3rem 0; }
+        .message-arrow, .message-arrow-right { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0.3rem 0; }
         .arrow-line { width: 80%; height: 2px; background: #58a6ff; position: relative; margin: 0.3rem 0; }
         .arrow-line.right::after { content: ''; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left-color: #58a6ff; }
         .arrow-line.left { background: #3fb950; }
@@ -84,6 +89,8 @@
         .arrow-label { font-size: 0.7rem; color: #8b949e; text-align: center; max-width: 90%; }
         .arrow-label.dir-left { color: #3fb950; }
         .arrow-label.dir-right { color: #58a6ff; }
+        .endpoint.attacker { border-color: #f85149; }
+        .endpoint.attacker .label { color: #f85149; }
 
         /* Cert chain removed — info is in the protocol tree */
 
@@ -264,6 +271,17 @@
                 <div class="arrow-line right" id="arrow-line"></div>
             </div>
         </div>
+        <div class="endpoint attacker" id="mitm-attacker" style="display:none">
+            <div class="icon">&#x1F977;</div>
+            <div class="label">Attacker</div>
+            <div style="font-size:0.65rem;color:#8b949e;margin-top:0.2rem;">10.0.0.99</div>
+        </div>
+        <div class="arrow-area" id="arrow-area-right" style="display:none">
+            <div class="message-arrow-right" id="arrow-display-right">
+                <div class="arrow-label" id="arrow-label-right"></div>
+                <div class="arrow-line right" id="arrow-line-right"></div>
+            </div>
+        </div>
         <div class="endpoint" id="server">
             <div class="icon">&#x1F3E6;</div>
             <div class="label">Server</div>
@@ -274,7 +292,7 @@
     <!-- Wireshark Toolbar -->
     <div class="ws-toolbar">
         <span class="title">&#x1F988; Packet Capture</span>
-        <button id="load-keys">Load SSLKEYLOGFILE… (simulated)</button>
+        <button id="load-keys">Load SSLKEYLOGFILE…</button>
     </div>
 
     <!-- Wireshark Packet List -->
@@ -390,10 +408,6 @@
                 <label for="scenario-cert-pin">Certificate pinning failure</label>
             </div>
             <div class="toggle-row">
-                <input type="radio" name="scenario" id="scenario-freak" value="freak">
-                <label for="scenario-freak">Export cipher downgrade (FREAK/Logjam)</label>
-            </div>
-            <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-psk" value="psk">
                 <label for="scenario-psk">PSK session resumption</label>
             </div>
@@ -409,10 +423,6 @@
                 <input type="radio" name="scenario" id="scenario-mtls" value="mtls">
                 <label for="scenario-mtls">Mutual TLS (client certificate)</label>
             </div>
-            <div class="toggle-row">
-                <input type="radio" name="scenario" id="scenario-renego" value="renego">
-                <label for="scenario-renego">Renegotiation injection attack</label>
-            </div>
             <div class="toggle-section-label">TLS 1.2 Downgrade</div>
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-tls12" value="tls12">
@@ -425,6 +435,14 @@
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-tls12-expired" value="tls12-expired">
                 <label for="scenario-tls12-expired">TLS 1.2 + expired certificate</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-freak" value="freak">
+                <label for="scenario-freak">Export cipher downgrade (FREAK/Logjam)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-renego" value="renego">
+                <label for="scenario-renego">Renegotiation injection attack</label>
             </div>
         </div>
 
@@ -447,6 +465,10 @@
             arrowDisplay: document.getElementById('arrow-display'),
             arrowLabel: document.getElementById('arrow-label'),
             arrowLine: document.getElementById('arrow-line'),
+            mitmAttacker: document.getElementById('mitm-attacker'),
+            arrowAreaRight: document.getElementById('arrow-area-right'),
+            arrowLabelRight: document.getElementById('arrow-label-right'),
+            arrowLineRight: document.getElementById('arrow-line-right'),
             connectionStatus: document.getElementById('connection-status'),
             failureMessage: document.getElementById('failure-message'),
             warningMessage: document.getElementById('warning-message'),
@@ -460,7 +482,7 @@
         function getScenario() {
             const v = (document.querySelector('input[name="scenario"]:checked') || {}).value || 'none';
             return {
-                noFs:        ['tls12','tls12-cbc','tls12-expired'].includes(v),
+                noFs:        ['tls12','tls12-cbc','tls12-expired','freak','renego'].includes(v),
                 cbc:         v === 'tls12-cbc',
                 expiredCert: v === 'expired-cert' || v === 'tls12-expired',
                 mitm:        v === 'mitm',
@@ -648,12 +670,6 @@
             [H('0000','17 03 03 10 00 d4 e8 fc 10 24 38 4c 60 74 88 9c','.........$8L`t..'),H('0010','b0 c4 d8 ec 00 14 28 3c 50 64 78 8c a0 b4 c8 dc','......(<Pdx.....')],
         ];
 
-        // FREAK scenario: server responds with Alert (handshake_failure) at step 2
-        const hexFREAK = [
-            hexEncrypted[0], // ClientHello unchanged
-            [H('0000','15 03 03 00 02 02 28                              ','.......')], // Alert: Fatal, handshake_failure(40)
-            hexEncrypted[2], hexEncrypted[3], hexEncrypted[4], hexEncrypted[5],
-        ];
 
         const hexDecrypted = [
             hexEncrypted[0],
@@ -766,19 +782,19 @@
         // Scenario-specific protocol tree overlays (TLS 1.3 path only — flat arrays for one step)
         const detailScenarioFREAK = [
             T('Transport Layer Security', 0, 'layer'),
-            T('▼ TLSv1.3 Record Layer: Alert', 0, 'layer'),
-            T('Content Type: <span class="ws-tree-value">Alert (21)</span>', 1),
-            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span> ← legacy compat field', 1),
-            T('▼ Alert Message', 1, 'layer'),
-            T('Level: <span class="ws-tree-value">Fatal (2)</span>', 2),
-            T('Description: <span class="ws-tree-value">handshake_failure (40)</span>', 2, 'warn'),
-            T('TLS 1.3 has no export ciphers — server found no acceptable cipher in ClientHello', 2, 'warn'),
-            T('The MITM stripped TLS 1.3 cipher suites, leaving only export-grade ones', 2, 'warn'),
-            T('TLS 1.3 server cannot negotiate TLS_RSA_EXPORT_WITH_RC4_40_MD5 — it aborts ❌', 2, 'warn'),
-            T('Historical context (TLS 1.2 server): a vulnerable server would have selected', 2),
-            T('  TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003) — 40-bit RC4, factorable in hours', 3, 'warn'),
-            T('  No key_share extension; RSA key exchange; no forward secrecy', 3, 'warn'),
-            T('Fix: disable export cipher support in server config; TLS 1.3-only servers are immune', 0, 'warn'),
+            T('▼ TLSv1.2 Record Layer: Handshake Protocol: Server Hello', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span>', 1),
+            T('▼ Handshake Protocol: Server Hello', 1, 'layer'),
+            T('Handshake Type: <span class="ws-tree-value">Server Hello (2)</span>', 2),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span>', 2),
+            T('▼ Cipher Suite: <span class="ws-tree-value">TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003)</span> <span class="ws-tree-warn">← FREAK attack succeeded ❌</span>', 2, 'warn'),
+            T('MITM stripped strong suites from ClientHello — server selected the only remaining suite', 3, 'warn'),
+            T('40-bit RC4 key: factorable in hours on commodity hardware', 3, 'warn'),
+            T('RSA key exchange: no forward secrecy — static private key decrypts all past sessions', 3, 'warn'),
+            T('Compression: <span class="ws-tree-value">null (0)</span>', 2),
+            T('Handshake completes — client receives no alert; the downgrade is silent ❌', 0, 'warn'),
+            T('Fix: disable export ciphers in server config; TLS 1.3-only servers are fully immune (no export suites exist)', 0, 'warn'),
         ];
 
         const detailScenarioExpiredCert = [
@@ -944,6 +960,15 @@
             [H('0000','17 03 03 10 00 d4 e8 fc 10 24 38 4c 60 74 88 9c','.........$8L`t..'),H('0010','b0 c4 d8 ec 00 14 28 3c 50 64 78 8c a0 b4 c8 dc','......(<Pdx.....'),],
         ];
 
+        // FREAK scenario: TLS 1.2 server accepts export cipher — attack succeeds silently
+        const hexFREAK = [
+            hexDowngrade[0], // TLS 1.2 ClientHello (no key_share; MITM injected only export suites)
+            [H('0000','16 03 03 00 31 02 00 00 2d 03 03 a8 c4 e1 f0 6a','.....1..-......j'),
+             H('0010','2b 19 d7 83 4e f5 c0 b1 a2 38 9d e7 54 6c 0f 11','+...N....8..Tl..'),
+             H('0020','22 33 44 55 66 77 88 99 00 00 03 00 00 16 03 03','"3DUfw.......')], // 0x0003 = TLS_RSA_EXPORT_WITH_RC4_40_MD5
+            hexDowngrade[2], hexDowngrade[3], hexDowngrade[4], hexDowngrade[5],
+        ];
+
         // TLS 1.2 + CBC hex — same as hexDowngrade but ServerHello byte 0x009d→0x0035 (AES-256-CBC)
         const hexDowngradeCBC = [
             hexDowngrade[0],
@@ -976,9 +1001,9 @@
                        : state.keysLoaded ? packetInfoDecrypted
                        :                   packetInfoEncrypted;
             rows.forEach((row, i) => {
-                // FREAK: server aborts at ServerHello with Alert(handshake_failure)
-                const info  = (sc.freak && i === 1) ? 'Alert (Fatal): handshake_failure (40)' : data[i].info;
-                const proto = (sc.freak && i === 1) ? 'TLSv1.3'                               : data[i].proto;
+                // FREAK: server accepts export cipher in ServerHello — attack succeeds silently
+                const info  = (sc.freak && i === 1) ? 'Server Hello (cipher: TLS_RSA_EXPORT_WITH_RC4_40_MD5 0x0003), Certificate, Server Hello Done' : data[i].info;
+                const proto = data[i].proto;
                 row.querySelector('.ws-info').textContent = info;
                 row.querySelector('.ws-proto').textContent = proto;
                 row.dataset.proto = data[i].proto;
@@ -1021,6 +1046,16 @@
             els.arrowLine.className = 'arrow-line ' + s.arrowDir;
             els.arrowLabel.className = 'arrow-label dir-' + s.arrowDir;
 
+            // MITM attacker node
+            const mitmVisible = sc.mitm;
+            els.mitmAttacker.style.display = mitmVisible ? '' : 'none';
+            els.arrowAreaRight.style.display = mitmVisible ? '' : 'none';
+            if (mitmVisible) {
+                els.arrowLabelRight.textContent = s.arrowText;
+                els.arrowLineRight.className = 'arrow-line ' + s.arrowDir;
+                els.arrowLabelRight.className = 'arrow-label dir-' + s.arrowDir;
+            }
+
 
             // Connection status
             if (s.showStatus && !isDowngrade) {
@@ -1034,9 +1069,11 @@
                               : state.keysLoaded ? detailDecrypted[idx]
                               : detailEncrypted[idx];
 
-            // Scenario-specific protocol tree overlays (TLS 1.3 path only)
-            if (!isDowngrade) {
-                if (sc.freak      && idx === 1) detailNodes = detailScenarioFREAK;
+            // Scenario-specific protocol tree overlays
+            if (isDowngrade) {
+                if (sc.freak  && idx === 1) detailNodes = detailScenarioFREAK;
+                if (sc.renego && idx === 4) detailNodes = detailScenarioRenego;
+            } else {
                 if (sc.expiredCert && idx === 2) detailNodes = detailScenarioExpiredCert;
                 if (sc.mitm       && idx === 2) detailNodes = detailScenarioMITM;
                 if (sc.certPin    && idx === 2) detailNodes = detailScenarioCertPin;
@@ -1044,7 +1081,6 @@
                 if (sc.sni        && idx === 0) detailNodes = detailScenarioSNI;
                 if (sc.mtls       && idx === 3) detailNodes = detailScenarioMTLS;
                 if (sc.zeroRtt    && idx === 4) detailNodes = detailScenarioZeroRtt;
-                if (sc.renego     && idx === 4) detailNodes = detailScenarioRenego;
             }
 
             els.wsDetail.innerHTML = detailNodes.map(n => {
@@ -1097,6 +1133,18 @@
                 els.warningMessage.classList.add('visible');
             }
 
+            // FREAK/Logjam — fires at step 2 (ServerHello) in TLS 1.2 downgrade path
+            if (step === 2 && sc.freak) {
+                els.warningMessage.textContent = 'FREAK/Logjam downgrade: the MITM stripped strong cipher suites from the ClientHello. This TLS 1.2 server accepted the only remaining suite — TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003). The 40-bit RC4 key is factorable in hours on commodity hardware. The handshake completes with no client-visible alert — the downgrade is silent. TLS 1.3-only servers are immune (no export suites exist; a stripped ClientHello triggers handshake_failure).';
+                els.warningMessage.classList.add('visible');
+            }
+
+            // Renegotiation injection — fires at step 5 (App Data) in TLS 1.2 downgrade path
+            if (step === 5 && sc.renego) {
+                els.warningMessage.textContent = 'Renegotiation injection: pre-RFC 5746 TLS 1.2 allowed unauthenticated renegotiation. An attacker could inject a prefix request then trigger renegotiation — the server concatenates attacker and victim data as one authenticated stream. Fixed by the Renegotiation Indication extension (RFC 5746) and eliminated entirely in TLS 1.3 (RFC 8446 §4.6.3).';
+                els.warningMessage.classList.add('visible');
+            }
+
             // Extended what-if scenarios — TLS 1.3 path only
             if (!sc.noFs) {
                 // SNI leakage — fires at step 1 (ClientHello)
@@ -1109,13 +1157,6 @@
                 if (step === 2 && sc.psk) {
                     els.warningMessage.textContent = 'PSK resumption: the server accepted a pre-shared key from a previous session ticket. The ECDHE key share is still used (PSK+DHE), so forward secrecy is preserved. Without DHE (PSK-only mode), forward secrecy is lost — a stolen ticket decrypts recorded traffic.';
                     els.warningMessage.classList.add('visible');
-                }
-
-                // FREAK/Logjam export cipher downgrade — fires at step 2 (ServerHello), halts
-                if (step === 2 && sc.freak) {
-                    els.failureMessage.textContent = 'FREAK/Logjam downgrade attempt: MITM stripped TLS 1.3 cipher suites from ClientHello, leaving only export-grade ones. A TLS 1.3 server has no export ciphers — it responds with handshake_failure (40) and aborts. Against a TLS 1.2 server that still supports export ciphers, the attack succeeds: RSA-512 / DHE-512 keys are factorable in hours. TLS 1.3-only servers are fully immune.';
-                    els.failureMessage.classList.add('visible');
-                    state.halted = true;
                 }
 
                 // Certificate pinning failure — fires at step 3 (Certificate), halts
@@ -1137,11 +1178,6 @@
                     els.warningMessage.classList.add('visible');
                 }
 
-                // Renegotiation injection — fires at step 5 (App Data / Encrypted Data)
-                if (step === 5 && sc.renego) {
-                    els.warningMessage.textContent = 'Renegotiation injection: pre-RFC 5746 TLS allowed unauthenticated renegotiation. An attacker could inject a prefix request then trigger renegotiation — the server concatenates attacker and victim data as one authenticated stream. Fixed by the Renegotiation Indication extension (RFC 5746) and disabling renegotiation entirely in TLS 1.3.';
-                    els.warningMessage.classList.add('visible');
-                }
             }
 
             // Disable next if halted or at end
@@ -1149,16 +1185,10 @@
 
             // Correct pillar state for failure scenarios
             if (state.halted) {
-                if (step === 2 && sc.freak) {
-                    // TLS 1.3: server aborted at ServerHello — key exchange never completed
-                    // Also covers FREAK/Logjam: negotiation failed before keys were established
-                    pillars.keyExchange.classList.remove('active');
-                } else {
-                    // Cert failure (expired, MITM, pinning): authentication was not established.
-                    // In TLS 1.3 the cert flight is sent encrypted (encryption WAS in use — keep it).
-                    // In TLS 1.2 downgrade encryption is not yet active at the cert step (no-op).
-                    pillars.authentication.classList.remove('active');
-                }
+                // Cert failure (expired, MITM, pinning): authentication was not established.
+                // In TLS 1.3 the cert flight is sent encrypted (encryption WAS in use — keep it).
+                // In TLS 1.2 downgrade encryption is not yet active at the cert step (no-op).
+                pillars.authentication.classList.remove('active');
             }
 
             // Lock scenario radios once handshake has started; unlock only at step 1
@@ -1204,7 +1234,7 @@
             state.keysLoaded = false;
             state.halted = false;
             document.getElementById('scenario-none').checked = true;
-            els.loadKeys.textContent = 'Load SSLKEYLOGFILE… (simulated)';
+            els.loadKeys.textContent = 'Load SSLKEYLOGFILE…';
             els.decryptCallout.classList.remove('visible');
             render();
         });
