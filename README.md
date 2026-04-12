@@ -17,16 +17,31 @@ Every HTTPS connection starts with a handshake. This demo walks through the TLS 
 5. **Encrypted Data** — Integrity (AEAD-authenticated records flow; auth tag is integral to the cipher, not a separate HMAC)
 6. **Done** — All four pillars active. Connection secure.
 
-## What-If Toggles
+## What-If Scenarios
 
-Toggle failure scenarios to see how the handshake breaks:
+Toggle scenarios to see how the handshake changes or breaks:
 
-| Toggle | Effect |
-|--------|--------|
-| **Expired Certificate** | Step 3 fails — connection refused |
-| **No Forward Secrecy** | Warning at step 4 — recorded traffic at risk |
-| **MITM Attempt** | Step 3 catches the interception |
-| **CBC Mode** | TLS 1.3: rejection at ServerHello (step 2). TLS 1.2 + CBC: warning from step 3 — padding oracle risk |
+**TLS 1.3 path**
+
+| Scenario | Effect |
+|----------|--------|
+| **Expired Certificate** | Step 3 fails — certificate validity check aborts the connection |
+| **MITM Attempt** | Step 3 catches the rogue certificate — untrusted CA or invalid CertificateVerify |
+| **Certificate Pinning Failure** | Step 3 fails — cert is valid but SPKI hash doesn't match the pinned value |
+| **PSK Session Resumption** | Step 2 — server accepts a session ticket; ECDHE still used for forward secrecy |
+| **SNI Exposed (no ECH)** | Step 1 — server name visible in plaintext ClientHello extension |
+| **0-RTT Early Data** | Step 5 — early data sent before server Finished; no forward secrecy, replay risk |
+| **Mutual TLS** | Step 4 — client presents its own certificate after server CertificateRequest |
+
+**TLS 1.2 Downgrade path**
+
+| Scenario | Effect |
+|----------|--------|
+| **TLS 1.2 downgrade (RSA)** | Full downgrade — RSA key exchange, no forward secrecy |
+| **TLS 1.2 + CBC cipher** | Warning from step 3 — Lucky13, POODLE, BEAST padding-oracle risk |
+| **TLS 1.2 + expired certificate** | Step 2 fails — certificate validity check |
+| **Export Cipher Downgrade (FREAK/Logjam)** | Step 2 — TLS 1.2 server silently accepts 40-bit export cipher; attack succeeds with no client alert |
+| **Renegotiation Injection** | Step 5 — pre-RFC 5746 TLS 1.2 allows attacker prefix injection via unauthenticated renegotiation |
 
 ## Development
 
@@ -43,7 +58,7 @@ python3 -m http.server 3009 --directory web
 npm test
 ```
 
-45 Playwright E2E tests covering security headers, happy path, failure toggles, and reset.
+77 Playwright E2E tests covering security headers, happy path, scenario toggles, and reset.
 
 ## Tech Stack
 

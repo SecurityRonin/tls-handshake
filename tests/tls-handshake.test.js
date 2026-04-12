@@ -473,34 +473,34 @@ test.describe('What-If Scenarios — Extended', () => {
         await expect(page.locator('#scenario-freak')).toBeVisible();
     });
 
-    test('FREAK: failure appears at step 2 (ServerHello)', async ({ page }) => {
+    test('FREAK: warning appears at step 2 (ServerHello) on TLS 1.2 path', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-freak');
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 2');
-        await expect(page.locator('#failure-message')).toBeVisible();
-        await expect(page.locator('#failure-message')).toContainText('FREAK');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('FREAK');
     });
 
-    test('FREAK: next step is disabled (halts)', async ({ page }) => {
+    test('FREAK: next step is NOT disabled (attack succeeds silently, no halt)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-freak');
         await page.click('#next-step');
-        await expect(page.locator('#next-step')).toBeDisabled();
+        await expect(page.locator('#next-step')).not.toBeDisabled();
     });
 
-    test('FREAK: keyExchange pillar is NOT active after halt', async ({ page }) => {
+    test('FREAK: keyExchange pillar remains active (handshake completes with weak key)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-freak');
         await page.click('#next-step');
-        await expect(page.locator('#pillar-key-exchange')).not.toHaveClass(/active/);
+        await expect(page.locator('#pillar-key-exchange')).toHaveClass(/active/);
     });
 
-    test('FREAK: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+    test('FREAK: plain TLS 1.2 downgrade does not show FREAK warning', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-tls12');
         await page.click('#next-step');
-        await expect(page.locator('#failure-message')).not.toContainText('FREAK');
+        await expect(page.locator('#warning-message')).not.toContainText('FREAK');
     });
 
     // ── 7. TLS Renegotiation Injection ───────────────────────────────────────
