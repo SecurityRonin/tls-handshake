@@ -30,7 +30,7 @@ Toggle scenarios to see how the handshake changes or breaks:
 | **Certificate Pinning Failure** | Step 3 fails — cert is valid but SPKI hash doesn't match the pinned value |
 | **PSK Session Resumption** | Step 2 — server accepts a session ticket; ECDHE still used for forward secrecy |
 | **SNI Exposed (no ECH)** | Step 1 — server name visible in plaintext ClientHello extension |
-| **0-RTT Early Data** | Step 5 — early data sent before server Finished; no forward secrecy, replay risk |
+| **0-RTT Early Data** | Step 5 — early data sent before server Finished; weaker protection than 1-RTT (no replay protection by default, bound to resumption key rather than fresh ECDHE share) |
 | **Mutual TLS** | Step 4 — client presents its own certificate after server CertificateRequest |
 
 **TLS 1.2 Downgrade path**
@@ -38,9 +38,9 @@ Toggle scenarios to see how the handshake changes or breaks:
 | Scenario | Effect |
 |----------|--------|
 | **TLS 1.2 downgrade (RSA)** | Full downgrade — RSA key exchange, no forward secrecy |
-| **TLS 1.2 + CBC cipher** | Warning from step 3 — Lucky13, POODLE, BEAST padding-oracle risk |
+| **TLS 1.2 + CBC cipher** | Warning from step 3 — Lucky13/POODLE exploit CBC padding oracles; BEAST exploits predictable TLS 1.0 CBC IVs (chosen-plaintext, not a padding oracle) |
 | **TLS 1.2 + expired certificate** | Step 2 fails — certificate validity check |
-| **Export Cipher Downgrade (FREAK/Logjam)** | Step 2 — TLS 1.2 server silently accepts 40-bit export cipher; attack succeeds with no client alert |
+| **Export Cipher Downgrade (FREAK/Logjam)** | Step 2 — TLS 1.2 server silently accepts export-grade RSA/DHE key exchange; attack succeeds with no client alert |
 | **Renegotiation Injection** | Step 5 — pre-RFC 5746 TLS 1.2 allows attacker prefix injection via unauthenticated renegotiation |
 
 ## Development
