@@ -119,9 +119,13 @@
             display: flex; padding: 0.25rem 0.5rem; cursor: pointer; border-bottom: 1px solid #21262d;
             transition: background 0.1s;
         }
-        .ws-packet-row:hover { background: #161b22; }
-        .ws-packet-row.selected { background: #1f3a5f; color: #fff; }
+        .ws-packet-row:hover { background: #1a1f27; }
+        .ws-packet-row.selected { background: #1f3a5f !important; color: #fff; }
         .ws-packet-row.ws-row-hidden { display: none; }
+        /* Wireshark-style protocol colouring (dark-theme adapted) */
+        .ws-packet-row[data-proto="TLSv1.3"] { background: rgba(88, 100, 220, 0.10); }
+        .ws-packet-row[data-proto="TLSv1.2"] { background: rgba(210, 153, 34, 0.10); }
+        .ws-packet-row[data-proto="HTTP/2"]  { background: rgba(63, 185, 80, 0.10); }
         .ws-no { width: 40px; flex-shrink: 0; color: #8b949e; }
         .ws-time { width: 60px; flex-shrink: 0; }
         .ws-src { width: 130px; flex-shrink: 0; }
@@ -191,7 +195,20 @@
         .toggles { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1rem 1.5rem; width: 100%; }
         .toggles h3 { color: #58a6ff; font-size: 0.9rem; margin-bottom: 0.8rem; }
         .toggle-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.4rem 0; }
-        .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #f85149; cursor: pointer; }
+        .toggle-row input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none;
+            width: 15px; height: 15px; flex-shrink: 0;
+            border: 2px solid #484f58; border-radius: 3px;
+            background: #0d1117; cursor: pointer; position: relative;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .toggle-row input[type="checkbox"]:checked { background: #f85149; border-color: #f85149; }
+        .toggle-row input[type="checkbox"]:checked::after {
+            content: '✓'; position: absolute; color: #fff;
+            font-size: 10px; line-height: 1; top: 0px; left: 1px;
+        }
+        .toggle-row input[type="checkbox"]:disabled { opacity: 0.35; cursor: not-allowed; }
+        .toggle-row input[type="checkbox"]:disabled + label { opacity: 0.35; cursor: not-allowed; }
         .toggle-row label { font-size: 0.8rem; color: #c9d1d9; cursor: pointer; }
     </style>
 </head>
@@ -627,6 +644,7 @@
             rows.forEach((row, i) => {
                 row.querySelector('.ws-info').textContent = data[i].info;
                 row.querySelector('.ws-proto').textContent = data[i].proto;
+                row.dataset.proto = data[i].proto;
                 const sd = data[i].src ? data[i] : originalSrcDst[i];
                 row.querySelector('.ws-src').textContent = sd.src;
                 row.querySelector('.ws-dst').textContent = sd.dst;
@@ -729,6 +747,10 @@
 
             // Disable next if halted or at end
             els.nextStep.disabled = state.halted || step >= 6;
+
+            // Lock toggles once handshake has started; unlock only at step 1
+            const locked = idx > 0;
+            Object.values(toggles).forEach(t => { t.disabled = locked; });
 
             // Update packet list info/proto
             updatePacketList();
