@@ -79,8 +79,11 @@
         .message-arrow { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0.3rem 0; }
         .arrow-line { width: 80%; height: 2px; background: #58a6ff; position: relative; margin: 0.3rem 0; }
         .arrow-line.right::after { content: ''; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left-color: #58a6ff; }
-        .arrow-line.left::after { content: ''; position: absolute; left: -2px; top: -5px; border: 6px solid transparent; border-right-color: #58a6ff; }
+        .arrow-line.left { background: #3fb950; }
+        .arrow-line.left::after { content: ''; position: absolute; left: -2px; top: -5px; border: 6px solid transparent; border-right-color: #3fb950; }
         .arrow-label { font-size: 0.7rem; color: #8b949e; text-align: center; max-width: 90%; }
+        .arrow-label.dir-left { color: #3fb950; }
+        .arrow-label.dir-right { color: #58a6ff; }
 
         /* Cert chain */
         #cert-chain { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; width: 100%; max-width: 500px; }
@@ -435,6 +438,16 @@
             { info: '200 OK', proto: 'HTTP/2' },
         ];
 
+        // TLS 1.2 RSA downgrade — different message sequence and directions
+        const packetInfoDowngrade = [
+            { info: 'Client Hello', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: 'Server Hello, Certificate, Server Hello Done', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
+            { info: 'Client Key Exchange, Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: 'Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
+            { info: 'Application Data', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: 'Application Data', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
+        ];
+
         // Detail pane: tree structure per row. Each node: { text, indent (0-4), type: 'layer'|'field'|'warn' }
         function T(text, indent, type) { return { text, indent: indent||0, type: type||'field' }; }
 
@@ -601,11 +614,22 @@
             render();
         }
 
+        // Original src/dst per row from HTML (captured once)
+        const originalSrcDst = Array.from(rows).map(row => ({
+            src: row.querySelector('.ws-src').textContent,
+            dst: row.querySelector('.ws-dst').textContent,
+        }));
+
         function updatePacketList() {
-            const data = state.keysLoaded ? packetInfoDecrypted : packetInfoEncrypted;
+            const data = toggles.noFs.checked ? packetInfoDowngrade
+                       : state.keysLoaded     ? packetInfoDecrypted
+                       :                        packetInfoEncrypted;
             rows.forEach((row, i) => {
                 row.querySelector('.ws-info').textContent = data[i].info;
                 row.querySelector('.ws-proto').textContent = data[i].proto;
+                const sd = data[i].src ? data[i] : originalSrcDst[i];
+                row.querySelector('.ws-src').textContent = sd.src;
+                row.querySelector('.ws-dst').textContent = sd.dst;
             });
         }
 
@@ -635,6 +659,7 @@
             // Arrow
             els.arrowLabel.textContent = s.arrowText;
             els.arrowLine.className = 'arrow-line ' + s.arrowDir;
+            els.arrowLabel.className = 'arrow-label dir-' + s.arrowDir;
 
             // Cert chain — visible at step 3
             if (s.showCertChain) {
@@ -758,6 +783,9 @@
             els.decryptCallout.classList.add('visible');
             render();
         });
+
+        // Re-render when toggles change so packet list updates immediately
+        Object.values(toggles).forEach(t => t.addEventListener('change', render));
 
         // Initial render
         render();
