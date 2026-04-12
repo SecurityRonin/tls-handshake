@@ -311,3 +311,226 @@ test.describe('Wizard Journey Header', () => {
         await expect(page.locator('.wizard-step:nth-child(3)')).toHaveClass(/active/);
     });
 });
+
+test.describe('What-If Scenarios — Extended', () => {
+    // ── 1. TLS 1.3 0-RTT Early Data ──────────────────────────────────────────
+    test('0-RTT: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-zero-rtt')).toBeVisible();
+    });
+
+    test('0-RTT: warning appears at step 5 (App Data)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-zero-rtt');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 5');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('0-RTT Early Data');
+    });
+
+    test('0-RTT: next step is NOT disabled (warning only, no halt)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-zero-rtt');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('0-RTT: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-zero-rtt');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#warning-message')).not.toContainText('0-RTT Early Data');
+    });
+
+    // ── 2. Certificate Pinning Failure ────────────────────────────────────────
+    test('cert-pin: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-cert-pin')).toBeVisible();
+    });
+
+    test('cert-pin: failure appears at step 3 (Certificate)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-cert-pin');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 3');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText('Certificate pinning failure');
+    });
+
+    test('cert-pin: next step is disabled (halts)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-cert-pin');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('cert-pin: authentication pillar is NOT active after halt', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-cert-pin');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
+    });
+
+    test('cert-pin: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-cert-pin');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#failure-message')).not.toContainText('Certificate pinning failure');
+    });
+
+    // ── 3. PSK Session Resumption ─────────────────────────────────────────────
+    test('PSK: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-psk')).toBeVisible();
+    });
+
+    test('PSK: warning appears at step 2 (ServerHello)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-psk');
+        await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 2');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('PSK resumption');
+    });
+
+    test('PSK: next step is NOT disabled (warning only)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-psk');
+        await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('PSK: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-psk');
+        await page.click('#next-step');
+        await expect(page.locator('#warning-message')).not.toContainText('PSK resumption');
+    });
+
+    // ── 4. SNI Leakage / No ECH ───────────────────────────────────────────────
+    test('SNI: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-sni')).toBeVisible();
+    });
+
+    test('SNI: warning appears at step 1 (ClientHello)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-sni');
+        await expect(page.locator('#step-indicator')).toContainText('Step 1');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('SNI leakage');
+    });
+
+    test('SNI: next step is NOT disabled (warning only)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-sni');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('SNI: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-sni');
+        await expect(page.locator('#warning-message')).not.toContainText('SNI leakage');
+    });
+
+    // ── 5. mTLS — Client Certificate ─────────────────────────────────────────
+    test('mTLS: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-mtls')).toBeVisible();
+    });
+
+    test('mTLS: warning appears at step 4 (Client Finished)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-mtls');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 4');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('Mutual TLS');
+    });
+
+    test('mTLS: next step is NOT disabled (warning only)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-mtls');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('mTLS: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-mtls');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#warning-message')).not.toContainText('Mutual TLS');
+    });
+
+    // ── 6. FREAK / Logjam — Export Cipher Downgrade ──────────────────────────
+    test('FREAK: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-freak')).toBeVisible();
+    });
+
+    test('FREAK: failure appears at step 2 (ServerHello)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-freak');
+        await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 2');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText('Export cipher downgrade');
+    });
+
+    test('FREAK: next step is disabled (halts)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-freak');
+        await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('FREAK: keyExchange pillar is NOT active after halt', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-freak');
+        await page.click('#next-step');
+        await expect(page.locator('#pillar-key-exchange')).not.toHaveClass(/active/);
+    });
+
+    test('FREAK: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-freak');
+        await page.click('#next-step');
+        await expect(page.locator('#failure-message')).not.toContainText('Export cipher downgrade');
+    });
+
+    // ── 7. TLS Renegotiation Injection ───────────────────────────────────────
+    test('renego: checkbox exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#toggle-renego')).toBeVisible();
+    });
+
+    test('renego: warning appears at step 5 (App Data)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-renego');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 5');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('Renegotiation injection');
+    });
+
+    test('renego: next step is NOT disabled (warning only)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-renego');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('renego: no effect when TLS 1.2 downgrade is active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-renego');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#warning-message')).not.toContainText('Renegotiation injection');
+    });
+});
