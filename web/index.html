@@ -346,7 +346,7 @@
 
     <!-- Cert chain (hidden by default) -->
     <div id="cert-chain">
-        <div class="cert-node">Root CA (trusted anchor)</div>
+        <div class="cert-node">Root CA <span style="color:#8b949e;font-size:0.7rem;">← trust anchor in client store, not transmitted</span></div>
         <div class="cert-node">&nbsp;&nbsp;Intermediate CA</div>
         <div class="cert-node">&nbsp;&nbsp;&nbsp;&nbsp;Leaf Certificate (server)</div>
     </div>
@@ -461,8 +461,8 @@
             { info: 'Server Hello, Certificate, Server Hello Done', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
             { info: 'Client Key Exchange, Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
             { info: 'Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
-            { info: 'Application Data', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
-            { info: 'Application Data', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
+            { info: 'GET / HTTP/1.1', proto: 'HTTP/1.1', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: '200 OK', proto: 'HTTP/1.1', src: '93.184.216.34', dst: '192.168.1.10' },
         ];
 
         // Detail pane: tree structure per row. Each node: { text, indent (0-4), type: 'layer'|'field'|'warn' }
@@ -559,7 +559,7 @@
                 T('Signature Algorithm: <span class="ws-tree-value">ecdsa-with-SHA256</span>', 4),
                 T('Intermediate: <span class="ws-tree-value">CN=R11, O=Let\'s Encrypt</span>', 4),
                 T('Issuer: <span class="ws-tree-value">CN=ISRG Root X1</span>', 4),
-                T('Root: <span class="ws-tree-value">CN=ISRG Root X1</span> <span class="ws-tree-warn">← pre-trusted in browser</span>', 4),
+                T('Root: <span class="ws-tree-value">CN=ISRG Root X1</span> <span class="ws-tree-warn">← from client trust store, NOT sent on wire</span>', 4),
                 T('▼ Handshake Protocol: CertificateVerify', 2, 'layer'),
                 T('Signature Algorithm: <span class="ws-tree-value">ecdsa_secp256r1_sha256 (0x0403)</span>', 3),
                 T('Signature: <span class="ws-tree-value">30 45 02 21 ... f7 8a (71 bytes)</span>', 3),
@@ -618,9 +618,9 @@
 
         const steps = [
             { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.', arrowDir: 'right', arrowText: 'Cipher suites, ECDHE key share, nonce', activePillars: ['keyExchange'] },
-            { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite and its ECDHE key share. Remaining messages (EncryptedExtensions, Certificate, CertificateVerify, Finished) are sent encrypted in the same flight.', arrowDir: 'left', arrowText: 'Selected suite, server key share', activePillars: ['keyExchange', 'authentication'] },
-            { label: 'Step 3', title: 'Certificate', desc: 'Server sends Certificate + CertificateVerify (encrypted). Client locally verifies the chain: Root CA → Intermediate CA → Leaf. No network round-trip needed for this validation.', arrowDir: 'left', arrowText: 'Certificate, CertificateVerify, Finished (encrypted)', activePillars: ['keyExchange', 'authentication'], showCertChain: true },
-            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message (a MAC over the handshake transcript). Both sides have independently derived the same session keys via HKDF from the ECDHE shared secret.', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption'] },
+            { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite and its ECDHE key share. Both sides now derive handshake traffic keys via HKDF. Authentication is NOT yet established — the certificate has not been sent or verified.', arrowDir: 'left', arrowText: 'Selected suite, server key share', activePillars: ['keyExchange'] },
+            { label: 'Step 3', title: 'Certificate', desc: 'Server sends EncryptedExtensions + Certificate + CertificateVerify + Finished, all encrypted under handshake traffic keys. Client verifies the chain locally (Leaf → Intermediate → Root trust anchor). Authentication is now established.', arrowDir: 'left', arrowText: 'Certificate, CertificateVerify, Finished (encrypted)', activePillars: ['keyExchange', 'authentication', 'encryption'], showCertChain: true },
+            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message (HMAC over the full handshake transcript). Both sides switch to application traffic keys derived via HKDF from the ECDHE shared secret.', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption'] },
             { label: 'Step 5', title: 'Encrypted Data', desc: 'Application data flows encrypted with AEAD (AES-256-GCM). Each record carries a 16-byte authentication tag — integral to the AEAD cipher, not a separate HMAC.', arrowDir: 'right', arrowText: 'Encrypted records + AEAD auth tags', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
             { label: 'Step 6', title: 'Handshake Complete', desc: 'All four pillars are satisfied. The TLS 1.3 connection is fully established.', arrowDir: 'right', arrowText: 'Secure channel established', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: true },
         ];
@@ -655,13 +655,13 @@
                 T('Transport Layer Security', 0, 'layer'),
                 T('▼ TLSv1.2 Record Layer: Handshake Protocol: Server Hello', 1, 'layer'),
                 T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span>', 2),
-                T('Cipher Suite: <span class="ws-tree-value">TLS_RSA_WITH_AES_256_GCM_SHA384 (0x009D)</span> ✅', 3),
+                T('Cipher Suite: <span class="ws-tree-value">TLS_RSA_WITH_AES_256_GCM_SHA384 (0x009D)</span> ✅ <span class="ws-tree-warn">← GCM selected; enable CBC toggle to select CBC</span>', 3),
                 T('▼ TLSv1.2 Record Layer: Handshake Protocol: Certificate', 1, 'layer'),
                 T('<span class="ws-tree-warn">⚠ Certificate sent in CLEARTEXT — visible on the wire before any encryption</span>', 2, 'warn'),
                 T('▼ Certificate Chain (3 entries)', 2, 'layer'),
                 T('Leaf: <span class="ws-tree-value">CN=www.example.com</span>', 3),
                 T('Intermediate: <span class="ws-tree-value">CN=R11, O=Let\'s Encrypt</span>', 3),
-                T('Root: <span class="ws-tree-value">CN=ISRG Root X1</span>', 3),
+                T('Root: <span class="ws-tree-value">CN=ISRG Root X1</span> <span class="ws-tree-warn">← from client trust store, NOT sent on wire</span>', 3),
                 T('▼ TLSv1.2 Record Layer: Handshake Protocol: Server Hello Done', 1, 'layer'),
             ],
             [ // Packet 3 - ClientKeyExchange + CCS + Finished
@@ -681,21 +681,38 @@
                 T('<span class="ws-tree-value">Handshake complete — session keys active</span>', 2),
                 T('<span class="ws-tree-warn">⚠ No forward secrecy — keys derivable from server RSA private key</span>', 2, 'warn'),
             ],
-            [ // Packet 5 - Application Data
-                T('Hypertext Transfer Protocol 2', 0, 'layer'),
-                T('▼ Stream 1: GET / HTTP/2', 1, 'layer'),
-                T(':method: <span class="ws-tree-value">GET</span>', 2),
-                T(':path: <span class="ws-tree-value">/</span>', 2),
+            [ // Packet 5 - HTTP/1.1 GET (HTTP/2 requires ECDHE+AEAD per RFC 7540 App.A — incompatible with RSA suites)
+                T('Hypertext Transfer Protocol 1.1', 0, 'layer'),
+                T('▼ GET / HTTP/1.1', 1, 'layer'),
+                T('Host: <span class="ws-tree-value">www.example.com</span>', 2),
                 T('▼ TLS Record', 1, 'layer'),
                 T('Cipher: <span class="ws-tree-value">AES-256-GCM</span>', 2),
                 T('<span class="ws-tree-warn">⚠ Session key bound to server RSA private key — no forward secrecy</span>', 2, 'warn'),
+                T('<span class="ws-tree-warn">⚠ HTTP/2 not used — RFC 7540 App.A blacklists RSA key exchange suites</span>', 2, 'warn'),
             ],
-            [ // Packet 6 - Application Data response
-                T('Hypertext Transfer Protocol 2', 0, 'layer'),
-                T('▼ Stream 1: 200 OK', 1, 'layer'),
-                T(':status: <span class="ws-tree-value">200</span>', 2),
-                T('content-type: <span class="ws-tree-value">text/html</span>', 2),
+            [ // Packet 6 - HTTP/1.1 response
+                T('Hypertext Transfer Protocol 1.1', 0, 'layer'),
+                T('▼ HTTP/1.1 200 OK', 1, 'layer'),
+                T('Content-Type: <span class="ws-tree-value">text/html</span>', 2),
             ],
+        ];
+
+        // When CBC toggle is also active, override packets 2 and 5 to show CBC cipher selection
+        const detailDowngradeCBC = [
+            detailDowngrade[0],
+            [
+                ...detailDowngrade[1].slice(0, 3),
+                T('Cipher Suite: <span class="ws-tree-value">TLS_RSA_WITH_AES_256_CBC_SHA (0x0035)</span> ✅', 3),
+                ...detailDowngrade[1].slice(4),
+            ],
+            detailDowngrade[2],
+            detailDowngrade[3],
+            [
+                ...detailDowngrade[4].slice(0, 4),
+                T('Cipher: <span class="ws-tree-value">AES-256-CBC</span>', 2),
+                ...detailDowngrade[4].slice(5),
+            ],
+            detailDowngrade[5],
         ];
 
         // TLS 1.2 hex — record version 0x0303, RSA premaster in packet 3
@@ -784,7 +801,7 @@
             }
 
             // Detail pane — protocol tree
-            const detailNodes = isDowngrade ? detailDowngrade[idx]
+            const detailNodes = isDowngrade ? (toggles.cbc.checked ? detailDowngradeCBC : detailDowngrade)[idx]
                               : state.keysLoaded ? detailDecrypted[idx]
                               : detailEncrypted[idx];
             els.wsDetail.innerHTML = detailNodes.map(n => {

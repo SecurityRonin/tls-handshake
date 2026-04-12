@@ -10,11 +10,11 @@ Interactive step-by-step **TLS 1.3 handshake** demonstration. See how key exchan
 
 Every HTTPS connection starts with a handshake. This demo walks through the TLS 1.3 protocol step by step, mapping each step to the four cryptographic pillars:
 
-1. **ClientHello** — Key Exchange (ECDHE key share sent)
-2. **ServerHello** — Authentication (certificate presented)
-3. **Certificate Verify** — Chain of trust validated (Root CA → Intermediate → Leaf)
-4. **Key Derivation** — Encryption (both sides derive the same session key)
-5. **Encrypted Data** — Integrity (HMAC-tagged packets flow)
+1. **ClientHello** — Key Exchange begins (ECDHE key share sent)
+2. **ServerHello** — Key exchange complete; handshake traffic keys derived. Authentication not yet established.
+3. **Certificate** — Server authenticates: encrypted Certificate + CertificateVerify flight verified. Encryption already active.
+4. **Client Finished** — Both sides hold the same application traffic keys (HKDF from ECDHE shared secret)
+5. **Encrypted Data** — Integrity (AEAD-authenticated records flow; auth tag is integral to the cipher, not a separate HMAC)
 6. **Done** — All four pillars active. Connection secure.
 
 ## What-If Toggles
@@ -26,7 +26,7 @@ Toggle failure scenarios to see how the handshake breaks:
 | **Expired Certificate** | Step 3 fails — connection refused |
 | **No Forward Secrecy** | Warning at step 4 — recorded traffic at risk |
 | **MITM Attempt** | Step 3 catches the interception |
-| **CBC Mode** | Warning at step 5 — padding oracle risk |
+| **CBC Mode** | TLS 1.3: rejection at ServerHello (step 2). TLS 1.2 + CBC: warning from step 3 — padding oracle risk |
 
 ## Development
 
