@@ -118,6 +118,7 @@
         }
         .ws-packet-row:hover { background: #161b22; }
         .ws-packet-row.selected { background: #1f3a5f; color: #fff; }
+        .ws-packet-row.ws-row-hidden { display: none; }
         .ws-no { width: 40px; flex-shrink: 0; color: #8b949e; }
         .ws-time { width: 60px; flex-shrink: 0; }
         .ws-src { width: 130px; flex-shrink: 0; }
@@ -168,7 +169,7 @@
         .step-description { color: #c9d1d9; font-size: 0.85rem; text-align: left; margin-bottom: 0; line-height: 1.5; }
 
         /* Connection status */
-        #connection-status { display: none; background: #238636; color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: 600; text-align: center; }
+        #connection-status { display: none; color: #3fb950; font-weight: 600; font-size: 0.9rem; }
         #connection-status.visible { display: block; }
         #failure-message { display: none; background: #3d1117; border: 1px solid #f85149; color: #f85149; padding: 0.8rem 1rem; border-radius: 8px; text-align: left; font-size: 0.82rem; }
         #failure-message.visible { display: block; }
@@ -606,9 +607,10 @@
             const idx = state.selectedRow;
             const s = steps[idx];
 
-            // Update row selection
+            // Update row selection — reveal rows up to current step
             rows.forEach((row, i) => {
                 row.classList.toggle('selected', i === idx);
+                row.classList.toggle('ws-row-hidden', i > idx);
             });
 
             // Wizard steps
