@@ -191,21 +191,27 @@
         .toggles { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1rem 1.5rem; width: 100%; }
         .toggles h3 { color: #58a6ff; font-size: 0.9rem; margin-bottom: 0.8rem; }
         .toggle-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.4rem 0; }
-        .toggle-row input[type="checkbox"] {
+        .toggle-row input[type="checkbox"], .toggle-row input[type="radio"] {
             appearance: none; -webkit-appearance: none;
             width: 15px; height: 15px; flex-shrink: 0;
             border: 2px solid #484f58; border-radius: 3px;
             background: #0d1117; cursor: pointer; position: relative;
             transition: background 0.15s, border-color 0.15s;
         }
-        .toggle-row input[type="checkbox"]:checked { background: #f85149; border-color: #f85149; }
+        .toggle-row input[type="radio"] { border-radius: 50%; }
+        .toggle-row input[type="checkbox"]:checked, .toggle-row input[type="radio"]:checked { background: #f85149; border-color: #f85149; }
         .toggle-row input[type="checkbox"]:checked::after {
             content: '✓'; position: absolute; color: #fff;
             font-size: 10px; line-height: 1; top: 0px; left: 1px;
         }
-        .toggle-row input[type="checkbox"]:disabled { opacity: 0.35; cursor: not-allowed; }
-        .toggle-row input[type="checkbox"]:disabled + label { opacity: 0.35; cursor: not-allowed; }
+        .toggle-row input[type="radio"]:checked::after {
+            content: ''; position: absolute; background: #fff;
+            width: 5px; height: 5px; border-radius: 50%; top: 3px; left: 3px;
+        }
+        .toggle-row input[type="checkbox"]:disabled, .toggle-row input[type="radio"]:disabled { opacity: 0.35; cursor: not-allowed; }
+        .toggle-row input[type="checkbox"]:disabled + label, .toggle-row input[type="radio"]:disabled + label { opacity: 0.35; cursor: not-allowed; }
         .toggle-row label { font-size: 0.8rem; color: #c9d1d9; cursor: pointer; }
+        .toggle-section-label { font-size: 0.7rem; color: #58a6ff; text-transform: uppercase; letter-spacing: 0.05em; margin: 0.6rem 0 0.2rem; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -364,52 +370,61 @@
         <div id="failure-message"></div>
         <div id="warning-message"></div>
 
-        <!-- What-If Toggles -->
+        <!-- What-If Scenarios -->
         <div class="toggles">
             <h3>What-If Scenarios</h3>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-expired-cert">
-                <label for="toggle-expired-cert">Expired certificate</label>
+                <input type="radio" name="scenario" id="scenario-none" value="none" checked>
+                <label for="scenario-none">Happy path — TLS 1.3</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-mitm">
-                <label for="toggle-mitm">MITM attempt</label>
+                <input type="radio" name="scenario" id="scenario-expired-cert" value="expired-cert">
+                <label for="scenario-expired-cert">Expired certificate</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-no-fs">
-                <label for="toggle-no-fs">Downgrade to TLS 1.2 (RSA key exchange, no forward secrecy)</label>
+                <input type="radio" name="scenario" id="scenario-mitm" value="mitm">
+                <label for="scenario-mitm">MITM attempt</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-cbc">
-                <label for="toggle-cbc">CBC cipher suite (pair with TLS 1.2 downgrade)</label>
+                <input type="radio" name="scenario" id="scenario-cert-pin" value="cert-pin">
+                <label for="scenario-cert-pin">Certificate pinning failure</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-cert-pin">
-                <label for="toggle-cert-pin">Certificate pinning failure</label>
+                <input type="radio" name="scenario" id="scenario-freak" value="freak">
+                <label for="scenario-freak">Export cipher downgrade (FREAK/Logjam)</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-freak">
-                <label for="toggle-freak">Export cipher downgrade (FREAK/Logjam)</label>
+                <input type="radio" name="scenario" id="scenario-psk" value="psk">
+                <label for="scenario-psk">PSK session resumption</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-mtls">
-                <label for="toggle-mtls">Mutual TLS (client certificate)</label>
+                <input type="radio" name="scenario" id="scenario-sni" value="sni">
+                <label for="scenario-sni">SNI exposed (no Encrypted Client Hello)</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-psk">
-                <label for="toggle-psk">PSK session resumption (no full handshake)</label>
+                <input type="radio" name="scenario" id="scenario-zero-rtt" value="zero-rtt">
+                <label for="scenario-zero-rtt">0-RTT Early Data (replay risk)</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-renego">
-                <label for="toggle-renego">Renegotiation injection attack</label>
+                <input type="radio" name="scenario" id="scenario-mtls" value="mtls">
+                <label for="scenario-mtls">Mutual TLS (client certificate)</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-sni">
-                <label for="toggle-sni">SNI exposed (no Encrypted Client Hello)</label>
+                <input type="radio" name="scenario" id="scenario-renego" value="renego">
+                <label for="scenario-renego">Renegotiation injection attack</label>
+            </div>
+            <div class="toggle-section-label">TLS 1.2 Downgrade</div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-tls12" value="tls12">
+                <label for="scenario-tls12">TLS 1.2 downgrade (RSA, no forward secrecy)</label>
             </div>
             <div class="toggle-row">
-                <input type="checkbox" id="toggle-zero-rtt">
-                <label for="toggle-zero-rtt">0-RTT Early Data (replay risk)</label>
+                <input type="radio" name="scenario" id="scenario-tls12-cbc" value="tls12-cbc">
+                <label for="scenario-tls12-cbc">TLS 1.2 + CBC cipher</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-tls12-expired" value="tls12-expired">
+                <label for="scenario-tls12-expired">TLS 1.2 + expired certificate</label>
             </div>
         </div>
 
@@ -442,19 +457,22 @@
             decryptCallout: document.getElementById('decrypt-callout'),
         };
 
-        const toggles = {
-            cbc: document.getElementById('toggle-cbc'),
-            certPin: document.getElementById('toggle-cert-pin'),
-            expiredCert: document.getElementById('toggle-expired-cert'),
-            freak: document.getElementById('toggle-freak'),
-            mitm: document.getElementById('toggle-mitm'),
-            mtls: document.getElementById('toggle-mtls'),
-            noFs: document.getElementById('toggle-no-fs'),
-            psk: document.getElementById('toggle-psk'),
-            renego: document.getElementById('toggle-renego'),
-            sni: document.getElementById('toggle-sni'),
-            zeroRtt: document.getElementById('toggle-zero-rtt'),
-        };
+        function getScenario() {
+            const v = (document.querySelector('input[name="scenario"]:checked') || {}).value || 'none';
+            return {
+                noFs:        ['tls12','tls12-cbc','tls12-expired'].includes(v),
+                cbc:         v === 'tls12-cbc',
+                expiredCert: v === 'expired-cert' || v === 'tls12-expired',
+                mitm:        v === 'mitm',
+                certPin:     v === 'cert-pin',
+                freak:       v === 'freak',
+                mtls:        v === 'mtls',
+                psk:         v === 'psk',
+                renego:      v === 'renego',
+                sni:         v === 'sni',
+                zeroRtt:     v === 'zero-rtt',
+            };
+        }
 
         const rows = document.querySelectorAll('.ws-packet-row');
         const wizardSteps = document.querySelectorAll('.wizard-step');
@@ -775,9 +793,9 @@
         }));
 
         function updatePacketList() {
-            const data = toggles.noFs.checked ? packetInfoDowngrade
-                       : state.keysLoaded     ? packetInfoDecrypted
-                       :                        packetInfoEncrypted;
+            const data = getScenario().noFs ? packetInfoDowngrade
+                       : state.keysLoaded   ? packetInfoDecrypted
+                       :                      packetInfoEncrypted;
             rows.forEach((row, i) => {
                 row.querySelector('.ws-info').textContent = data[i].info;
                 row.querySelector('.ws-proto').textContent = data[i].proto;
@@ -790,8 +808,9 @@
         }
 
         function render() {
+            const sc = getScenario();
             const idx = state.selectedRow;
-            const isDowngrade = toggles.noFs.checked;
+            const isDowngrade = sc.noFs;
             const s = isDowngrade ? stepsDowngrade[idx] : steps[idx];
 
             // Update row selection — reveal rows up to current step
@@ -829,7 +848,7 @@
             }
 
             // Detail pane — protocol tree
-            const detailNodes = isDowngrade ? (toggles.cbc.checked ? detailDowngradeCBC : detailDowngrade)[idx]
+            const detailNodes = isDowngrade ? (sc.cbc ? detailDowngradeCBC : detailDowngrade)[idx]
                               : state.keysLoaded ? detailDecrypted[idx]
                               : detailEncrypted[idx];
             els.wsDetail.innerHTML = detailNodes.map(n => {
@@ -839,7 +858,7 @@
             }).join('');
 
             // Hex pane — columnar layout
-            const hexRows = isDowngrade ? (toggles.cbc.checked ? hexDowngradeCBC : hexDowngrade)[idx]
+            const hexRows = isDowngrade ? (sc.cbc ? hexDowngradeCBC : hexDowngrade)[idx]
                           : state.keysLoaded ? hexDecrypted[idx]
                           : hexEncrypted[idx];
             els.wsHex.innerHTML = hexRows.map(r =>
@@ -852,84 +871,77 @@
             els.warningMessage.classList.remove('visible');
             els.warningMessage.textContent = '';
 
-            // Check toggles
+            // Check scenario flags
             state.halted = false;
             const step = idx + 1;
             // In TLS 1.2 downgrade the Certificate arrives at step 2; in TLS 1.3 at step 3
-            const certStep = toggles.noFs.checked ? 2 : 3;
+            const certStep = sc.noFs ? 2 : 3;
 
-            if (step === certStep && toggles.expiredCert.checked) {
+            if (step === certStep && sc.expiredCert) {
                 els.failureMessage.textContent = 'Handshake failed: certificate has expired. The server certificate validity period has ended.';
                 els.failureMessage.classList.add('visible');
                 state.halted = true;
             }
 
-            if (step === certStep && toggles.mitm.checked) {
+            if (step === certStep && sc.mitm) {
                 els.failureMessage.textContent = 'Handshake failed: the MITM proxy presented a certificate signed by an untrusted CA (or the CertificateVerify signature is invalid). The client cannot authenticate the server — connection aborted.';
                 els.failureMessage.classList.add('visible');
                 state.halted = true;
             }
 
-            if (step >= 4 && toggles.noFs.checked) {
+            if (step >= 4 && sc.noFs) {
                 els.warningMessage.textContent = 'TLS 1.2 downgrade (no forward secrecy): RSA key exchange means all session traffic can be decrypted retroactively if the server private key is ever stolen. Note: TLS 1.3 embeds a downgrade sentinel in ServerHello.random (RFC 8446 §4.1.3) — a TLS 1.3-capable client detecting this sentinel MUST abort, so a forced downgrade is normally prevented.';
                 els.warningMessage.classList.add('visible');
             }
 
-            if (step === 2 && toggles.cbc.checked && !toggles.noFs.checked) {
-                // TLS 1.3 rejects CBC at ServerHello — negotiation fails immediately
-                els.failureMessage.textContent = 'Handshake failed at ServerHello: TLS 1.3 does not support CBC cipher suites. The server found no acceptable AEAD cipher in the ClientHello and aborted. TLS 1.3 permits only AEAD suites (AES-GCM, AES-CCM, ChaCha20-Poly1305); CBC is not permitted.';
-                els.failureMessage.classList.add('visible');
-                state.halted = true;
-            }
-
-            if (step >= 3 && toggles.cbc.checked && toggles.noFs.checked) {
+            if (step >= 3 && sc.cbc && sc.noFs) {
                 // TLS 1.2 + CBC — cipher is now active, warn about its weaknesses
                 els.warningMessage.textContent = 'TLS 1.2 + CBC active: Lucky13 exploits a timing side-channel in CBC MAC-then-encrypt; POODLE targets SSLv3 CBC padding. BEAST exploits predictable TLS 1.0 CBC IVs — not a padding oracle. TLS 1.3 eliminates CBC entirely — only AEAD ciphers are permitted.';
                 els.warningMessage.classList.add('visible');
             }
 
             // Extended what-if scenarios — TLS 1.3 path only
-            if (!toggles.noFs.checked) {
+            if (!sc.noFs) {
                 // SNI leakage — fires at step 1 (ClientHello)
-                if (step === 1 && toggles.sni.checked) {
+                if (step === 1 && sc.sni) {
                     els.warningMessage.textContent = "SNI leakage: the server name 'example.com' is sent in plaintext in the ClientHello extension — visible to any on-path observer before encryption begins. Encrypted Client Hello (ECH, RFC 9258) encrypts the inner ClientHello using the server's public key published in DNS HTTPS records.";
                     els.warningMessage.classList.add('visible');
                 }
 
                 // PSK session resumption — fires at step 2 (ServerHello)
-                if (step === 2 && toggles.psk.checked) {
+                if (step === 2 && sc.psk) {
                     els.warningMessage.textContent = 'PSK resumption: the server accepted a pre-shared key from a previous session ticket. The ECDHE key share is still used (PSK+DHE), so forward secrecy is preserved. Without DHE (PSK-only mode), forward secrecy is lost — a stolen ticket decrypts recorded traffic.';
                     els.warningMessage.classList.add('visible');
                 }
 
                 // FREAK/Logjam export cipher downgrade — fires at step 2 (ServerHello), halts
-                if (step === 2 && toggles.freak.checked) {
+                if (step === 2 && sc.freak) {
                     els.failureMessage.textContent = 'Export cipher downgrade: a MITM stripped strong cipher suites from the ClientHello and the server negotiated an export-grade cipher (RSA-512 / DHE-512). These keys are factorable in hours. FREAK targets RSA export; Logjam targets DHE export. Fixed by removing export ciphers from server config and rejecting them client-side.';
                     els.failureMessage.classList.add('visible');
                     state.halted = true;
                 }
 
                 // Certificate pinning failure — fires at step 3 (Certificate), halts
-                if (step === certStep && toggles.certPin.checked) {
+                if (step === certStep && sc.certPin) {
                     els.failureMessage.textContent = "Certificate pinning failure: the server's SPKI hash does not match any pinned value in the application's trust store. Connection aborted — the certificate is valid but the app does not trust this CA or leaf. Used by mobile apps and zero-trust agents to defeat rogue CAs.";
                     els.failureMessage.classList.add('visible');
                     state.halted = true;
                 }
 
                 // mTLS — fires at step 4 (Client Finished)
-                if (step === 4 && toggles.mtls.checked) {
+                if (step === 4 && sc.mtls) {
                     els.warningMessage.textContent = 'Mutual TLS: the server sent a CertificateRequest during the encrypted handshake flight (step 3). The client responds here with its own Certificate + CertificateVerify before Finished. Both endpoints are now mutually authenticated — used in zero-trust, API gateways, and service meshes.';
                     els.warningMessage.classList.add('visible');
                 }
 
                 // 0-RTT Early Data — fires at step 5 (App Data)
-                if (step === 5 && toggles.zeroRtt.checked) {
+                if (step === 5 && sc.zeroRtt) {
                     els.warningMessage.textContent = '0-RTT Early Data active: the client sent application data before receiving the server Finished — these bytes have no forward secrecy and are vulnerable to replay attacks. Servers must implement application-layer replay protection (RFC 8446 §8).';
                     els.warningMessage.classList.add('visible');
                 }
 
                 // Renegotiation injection — fires at step 5 (App Data / Encrypted Data)
-                if (step === 5 && toggles.renego.checked) {
+                if (step === 5 && sc.renego) {
                     els.warningMessage.textContent = 'Renegotiation injection: pre-RFC 5746 TLS allowed unauthenticated renegotiation. An attacker could inject a prefix request then trigger renegotiation — the server concatenates attacker and victim data as one authenticated stream. Fixed by the Renegotiation Indication extension (RFC 5746) and disabling renegotiation entirely in TLS 1.3.';
                     els.warningMessage.classList.add('visible');
                 }
@@ -940,7 +952,7 @@
 
             // Correct pillar state for failure scenarios
             if (state.halted) {
-                if (step === 2 && (toggles.cbc.checked && !toggles.noFs.checked || toggles.freak.checked)) {
+                if (step === 2 && sc.freak) {
                     // TLS 1.3: server aborted at ServerHello — key exchange never completed
                     // Also covers FREAK/Logjam: negotiation failed before keys were established
                     pillars.keyExchange.classList.remove('active');
@@ -952,9 +964,9 @@
                 }
             }
 
-            // Lock toggles once handshake has started; unlock only at step 1
+            // Lock scenario radios once handshake has started; unlock only at step 1
             const locked = idx > 0;
-            Object.values(toggles).forEach(t => { t.disabled = locked; });
+            document.querySelectorAll('input[name="scenario"]').forEach(r => { r.disabled = locked; });
 
             // Update packet list info/proto
             updatePacketList();
@@ -994,17 +1006,7 @@
             state.selectedRow = 0;
             state.keysLoaded = false;
             state.halted = false;
-            toggles.cbc.checked = false;
-            toggles.certPin.checked = false;
-            toggles.expiredCert.checked = false;
-            toggles.freak.checked = false;
-            toggles.mitm.checked = false;
-            toggles.mtls.checked = false;
-            toggles.noFs.checked = false;
-            toggles.psk.checked = false;
-            toggles.renego.checked = false;
-            toggles.sni.checked = false;
-            toggles.zeroRtt.checked = false;
+            document.getElementById('scenario-none').checked = true;
             els.loadKeys.textContent = 'Load SSLKEYLOGFILE… (simulated)';
             els.decryptCallout.classList.remove('visible');
             render();
@@ -1014,15 +1016,15 @@
         els.loadKeys.addEventListener('click', () => {
             state.keysLoaded = true;
             els.loadKeys.textContent = 'Keys loaded';
-            els.decryptCallout.textContent = toggles.noFs.checked
+            els.decryptCallout.textContent = getScenario().noFs
                 ? 'TLS 1.2: only application data (packets 5-6) is encrypted. Handshake messages including the Certificate are sent in cleartext — no SSLKEYLOGFILE needed to read them.'
                 : 'TLS 1.3 encrypts everything after ServerHello — without the session keys, packets 3-6 appear as opaque "Application Data."';
             els.decryptCallout.classList.add('visible');
             render();
         });
 
-        // Re-render when toggles change so packet list updates immediately
-        Object.values(toggles).forEach(t => t.addEventListener('change', render));
+        // Re-render when scenario selection changes so packet list updates immediately
+        document.querySelectorAll('input[name="scenario"]').forEach(r => r.addEventListener('change', render));
 
         // Initial render
         render();
