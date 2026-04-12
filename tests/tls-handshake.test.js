@@ -896,6 +896,13 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#next-step')).toBeDisabled();
     });
 
+    test('client-auth-fail: server auth pillar remains active (server was authenticated; only client cert absent)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-client-auth-fail');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).toHaveClass(/active/);
+    });
+
     // ── 10. ECH Success ───────────────────────────────────────────────────────
     test('ECH: radio exists', async ({ page }) => {
         await page.goto('/');
