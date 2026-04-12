@@ -209,6 +209,7 @@ test.describe('Wireshark Packet List', () => {
 
     test('clicking a row highlights it', async ({ page }) => {
         await page.goto('/');
+        await page.click('#next-step'); // reveal row 2
         await page.click('.ws-packet-row:nth-child(2)');
         await expect(page.locator('.ws-packet-row:nth-child(2)')).toHaveClass(/selected/);
     });
@@ -222,6 +223,7 @@ test.describe('Wireshark Packet List', () => {
 
     test('arrow up moves selection', async ({ page }) => {
         await page.goto('/');
+        for (let i = 0; i < 2; i++) await page.click('#next-step'); // reveal rows 2-3
         await page.click('.ws-packet-row:nth-child(3)');
         await page.keyboard.press('ArrowUp');
         await expect(page.locator('.ws-packet-row:nth-child(2)')).toHaveClass(/selected/);
@@ -268,12 +270,14 @@ test.describe('Wireshark Decrypt', () => {
     test('after loading: selecting packet 3 shows certificate detail', async ({ page }) => {
         await page.goto('/');
         await page.click('#load-keys');
+        for (let i = 0; i < 2; i++) await page.click('#next-step'); // reveal row 3
         await page.click('.ws-packet-row:nth-child(3)');
         await expect(page.locator('#ws-detail')).toContainText('Certificate');
     });
 
     test('before loading: selecting packet 3 shows encrypted message', async ({ page }) => {
         await page.goto('/');
+        for (let i = 0; i < 2; i++) await page.click('#next-step'); // reveal row 3
         await page.click('.ws-packet-row:nth-child(3)');
         await expect(page.locator('#ws-detail')).toContainText(/[Ee]ncrypted/);
     });
@@ -307,6 +311,7 @@ test.describe('Wizard Journey Header', () => {
 
     test('selecting packet 3 highlights wizard step 3', async ({ page }) => {
         await page.goto('/');
+        for (let i = 0; i < 2; i++) await page.click('#next-step'); // reveal row 3
         await page.click('.ws-packet-row:nth-child(3)');
         await expect(page.locator('.wizard-step:nth-child(3)')).toHaveClass(/active/);
     });
