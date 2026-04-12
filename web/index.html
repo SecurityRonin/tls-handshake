@@ -616,13 +616,19 @@
                 els.connectionStatus.classList.remove('visible');
             }
 
-            // Detail pane
-            const detail = state.keysLoaded ? detailDecrypted[idx] : detailEncrypted[idx];
-            els.wsDetail.textContent = detail;
+            // Detail pane — protocol tree
+            const detailNodes = state.keysLoaded ? detailDecrypted[idx] : detailEncrypted[idx];
+            els.wsDetail.innerHTML = detailNodes.map(n => {
+                const indentCls = n.indent > 0 ? ' ws-tree-indent-' + n.indent : '';
+                const typeCls = n.type === 'layer' ? 'ws-tree-layer' : (n.type === 'warn' ? 'ws-tree-warn' : 'ws-tree-field');
+                return '<div class="ws-tree-node' + indentCls + '"><span class="' + typeCls + '">' + n.text + '</span></div>';
+            }).join('');
 
-            // Hex pane
-            const hex = state.keysLoaded ? hexDecrypted[idx] : hexEncrypted[idx];
-            els.wsHex.textContent = hex;
+            // Hex pane — columnar layout
+            const hexRows = state.keysLoaded ? hexDecrypted[idx] : hexEncrypted[idx];
+            els.wsHex.innerHTML = hexRows.map(r =>
+                '<div class="ws-hex-row"><span class="ws-hex-offset">' + r.offset + '</span><span class="ws-hex-bytes">' + r.bytes + '</span><span class="ws-hex-ascii">' + r.ascii + '</span></div>'
+            ).join('');
 
             // Clear messages
             els.failureMessage.classList.remove('visible');
