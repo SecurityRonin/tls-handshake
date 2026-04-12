@@ -212,7 +212,7 @@
         <div class="wizard-step active">1. ClientHello</div>
         <div class="wizard-step">2. ServerHello</div>
         <div class="wizard-step">3. Certificate</div>
-        <div class="wizard-step">4. Key Derivation</div>
+        <div class="wizard-step">4. Client Finished</div>
         <div class="wizard-step">5. App Data</div>
         <div class="wizard-step">6. Complete</div>
     </div>
@@ -370,7 +370,7 @@
             </div>
             <div class="toggle-row">
                 <input type="checkbox" id="toggle-cbc">
-                <label for="toggle-cbc">CBC cipher mode</label>
+                <label for="toggle-cbc">CBC cipher suite (pair with TLS 1.2 downgrade)</label>
             </div>
         </div>
 
@@ -427,7 +427,7 @@
         const packetInfoDecrypted = [
             { info: 'Client Hello', proto: 'TLSv1.3' },
             { info: 'Server Hello, Change Cipher Spec', proto: 'TLSv1.3' },
-            { info: 'Certificate, CertificateVerify, Finished', proto: 'TLSv1.3' },
+            { info: 'EncryptedExtensions, Certificate, CertificateVerify, Finished', proto: 'TLSv1.3' },
             { info: 'Finished', proto: 'TLSv1.3' },
             { info: 'GET / HTTP/2', proto: 'HTTP/2' },
             { info: '200 OK', proto: 'HTTP/2' },
@@ -441,10 +441,11 @@
                 T('Transport Layer Security', 0, 'layer'),
                 T('▼ TLSv1.3 Record Layer: Handshake Protocol: Client Hello', 1, 'layer'),
                 T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 2),
-                T('Version: <span class="ws-tree-value">TLS 1.0 (0x0301)</span> <span class="ws-tree-warn">← legacy, real version in extension</span>', 2),
+                T('Version: <span class="ws-tree-value">TLS 1.0 (0x0301)</span> <span class="ws-tree-warn">← record-layer version, may be 0x0301 per RFC 8446 §5.1</span>', 2),
                 T('Length: <span class="ws-tree-value">512</span>', 2),
                 T('▼ Handshake Protocol: Client Hello', 2, 'layer'),
                 T('Handshake Type: <span class="ws-tree-value">Client Hello (1)</span>', 3),
+                T('legacy_version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span> <span class="ws-tree-warn">← MUST be 0x0303 per RFC 8446 §4.1.2; real version negotiated via supported_versions extension</span>', 3),
                 T('Random: <span class="ws-tree-value">7f 3a 9b 2c ... e8 d1 (32 bytes)</span>', 3),
                 T('Session ID Length: <span class="ws-tree-value">32</span> <span class="ws-tree-warn">← middlebox compatibility</span>', 3),
                 T('▼ Cipher Suites (3 suites)', 3, 'layer'),
@@ -455,7 +456,7 @@
                 T('Supported Version: <span class="ws-tree-value">TLS 1.3 (0x0304)</span>', 4),
                 T('▼ Extension: key_share (51)', 3, 'layer'),
                 T('Key Share Group: <span class="ws-tree-value">x25519 (0x001d)</span>', 4),
-                T('Key Share: <span class="ws-tree-value">04 a1 b2 c3 ... 9f 8e (32 bytes)</span> <span class="ws-tree-warn">← client ECDHE public key</span>', 4),
+                T('Key Share: <span class="ws-tree-value">a1 b2 c3 d4 ... 9f 8e (32 bytes)</span> <span class="ws-tree-warn">← x25519 public key (raw 32 bytes, no SEC1 prefix)</span>', 4),
                 T('▼ Extension: signature_algorithms (13)', 3, 'layer'),
                 T('Algorithm: <span class="ws-tree-value">ecdsa_secp256r1_sha256 (0x0403)</span>', 4),
                 T('Algorithm: <span class="ws-tree-value">rsa_pss_rsae_sha256 (0x0804)</span>', 4),
@@ -472,9 +473,10 @@
                 T('Selected Version: <span class="ws-tree-value">TLS 1.3 (0x0304)</span> <span class="ws-tree-warn">← actual version</span>', 4),
                 T('▼ Extension: key_share (51)', 3, 'layer'),
                 T('Key Share Group: <span class="ws-tree-value">x25519 (0x001d)</span>', 4),
-                T('Key Share: <span class="ws-tree-value">05 d2 e3 f4 ... 7a 6b (32 bytes)</span> <span class="ws-tree-warn">← server ECDHE public key</span>', 4),
-                T('▼ [Encrypted Extensions]', 2, 'layer'),
-                T('<span class="ws-tree-warn">Remaining handshake messages are encrypted with handshake keys</span>', 3, 'warn'),
+                T('Key Share: <span class="ws-tree-value">d2 e3 f4 05 ... 7a 6b (32 bytes)</span> <span class="ws-tree-warn">← x25519 public key (raw 32 bytes, no SEC1 prefix)</span>', 4),
+                T('▼ TLSv1.3 Record Layer: Change Cipher Spec (middlebox compat)', 1, 'layer'),
+                T('<span class="ws-tree-warn">⚠ CCS is a vestigial compatibility record in TLS 1.3 (RFC 8446 §5). It has no cryptographic meaning and is ignored by TLS 1.3 peers.</span>', 2, 'warn'),
+                T('<span class="ws-tree-warn">✦ Next record (packet 3) carries EncryptedExtensions + Certificate + CertificateVerify + Finished, encrypted under handshake traffic keys</span>', 2, 'warn'),
             ],
             [ // Packet 3 - Encrypted
                 T('Transport Layer Security', 0, 'layer'),
@@ -509,10 +511,12 @@
         const detailDecrypted = [
             detailEncrypted[0],
             detailEncrypted[1],
-            [ // Packet 3 - Certificate + CertVerify + Finished
+            [ // Packet 3 - EncryptedExtensions + Certificate + CertVerify + Finished
                 T('Transport Layer Security', 0, 'layer'),
-                T('▼ TLSv1.3 Record Layer: Handshake Protocol: Certificate', 1, 'layer'),
-                T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">[encrypted wrapper]</span>', 2),
+                T('▼ TLSv1.3 Record Layer: Handshake Protocol (multiple)', 1, 'layer'),
+                T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">[encrypted wrapper — inner type is Handshake]</span>', 2),
+                T('▼ Handshake Protocol: EncryptedExtensions (decrypted)', 2, 'layer'),
+                T('Extensions Length: <span class="ws-tree-value">0</span> <span class="ws-tree-warn">← mandatory message, may carry ALPN, early_data, etc.</span>', 3),
                 T('▼ Handshake Protocol: Certificate (decrypted)', 2, 'layer'),
                 T('Certificate Request Context: <span class="ws-tree-value">(empty)</span>', 3),
                 T('▼ Certificate Chain (3 entries)', 3, 'layer'),
@@ -582,10 +586,10 @@
 
         const steps = [
             { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.', arrowDir: 'right', arrowText: 'Cipher suites, ECDHE key share, nonce', activePillars: ['keyExchange'] },
-            { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite, its ECDHE key share, and the server certificate.', arrowDir: 'left', arrowText: 'Selected suite, server key share, certificate', activePillars: ['keyExchange', 'authentication'] },
-            { label: 'Step 3', title: 'Certificate Verify', desc: 'Client verifies the certificate chain: Root CA, Intermediate CA, and the leaf certificate.', arrowDir: 'right', arrowText: 'Verify certificate signature', activePillars: ['keyExchange', 'authentication'], showCertChain: true },
-            { label: 'Step 4', title: 'Key Derivation', desc: 'Both sides derive the same session key from the ECDHE shared secret using HKDF.', arrowDir: 'right', arrowText: 'HKDF derive session keys', activePillars: ['keyExchange', 'authentication', 'encryption'] },
-            { label: 'Step 5', title: 'Encrypted Data', desc: 'Application data flows encrypted with AEAD (AES-GCM). Every packet carries an HMAC integrity tag.', arrowDir: 'right', arrowText: 'Encrypted packets + HMAC tags', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
+            { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite and its ECDHE key share. Remaining messages (EncryptedExtensions, Certificate, CertificateVerify, Finished) are sent encrypted in the same flight.', arrowDir: 'left', arrowText: 'Selected suite, server key share', activePillars: ['keyExchange', 'authentication'] },
+            { label: 'Step 3', title: 'Certificate', desc: 'Server sends Certificate + CertificateVerify (encrypted). Client locally verifies the chain: Root CA → Intermediate CA → Leaf. No network round-trip needed for this validation.', arrowDir: 'left', arrowText: 'Certificate, CertificateVerify, Finished (encrypted)', activePillars: ['keyExchange', 'authentication'], showCertChain: true },
+            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message (a MAC over the handshake transcript). Both sides have independently derived the same session keys via HKDF from the ECDHE shared secret.', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption'] },
+            { label: 'Step 5', title: 'Encrypted Data', desc: 'Application data flows encrypted with AEAD (AES-256-GCM). Each record carries a 16-byte authentication tag — integral to the AEAD cipher, not a separate HMAC.', arrowDir: 'right', arrowText: 'Encrypted records + AEAD auth tags', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
             { label: 'Step 6', title: 'Handshake Complete', desc: 'All four pillars are satisfied. The TLS 1.3 connection is fully established.', arrowDir: 'right', arrowText: 'Secure channel established', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: true },
         ];
 
@@ -637,8 +641,8 @@
                 els.certChain.classList.remove('visible');
             }
 
-            // Connection status
-            if (s.showStatus) {
+            // Connection status — suppressed for downgrade scenario
+            if (s.showStatus && !toggles.noFs.checked) {
                 els.connectionStatus.classList.add('visible');
             } else {
                 els.connectionStatus.classList.remove('visible');
@@ -675,19 +679,25 @@
             }
 
             if (step === 3 && toggles.mitm.checked) {
-                els.failureMessage.textContent = 'Handshake failed: MITM detected. Certificate signature mismatch indicates an interception attempt.';
+                els.failureMessage.textContent = 'Handshake failed: the MITM proxy presented a certificate signed by an untrusted CA (or the CertificateVerify signature is invalid). The client cannot authenticate the server — connection aborted.';
                 els.failureMessage.classList.add('visible');
                 state.halted = true;
             }
 
-            if (step === 4 && toggles.noFs.checked) {
-                els.warningMessage.textContent = 'TLS 1.2 downgrade: RSA key exchange has no forward secrecy. If the server private key is ever compromised, all previously recorded traffic can be decrypted retroactively.';
+            if (step >= 4 && toggles.noFs.checked) {
+                els.warningMessage.textContent = 'TLS 1.2 downgrade (no forward secrecy): RSA key exchange means all session traffic can be decrypted retroactively if the server private key is ever stolen. Note: TLS 1.3 embeds a downgrade sentinel in ServerHello.random (RFC 8446 §4.1.3) — a TLS 1.3-capable client detecting this sentinel MUST abort, so a forced downgrade is normally prevented.';
                 els.warningMessage.classList.add('visible');
             }
 
             if (step === 5 && toggles.cbc.checked) {
-                els.warningMessage.textContent = 'Warning: CBC mode is vulnerable to padding oracle attacks. Prefer AEAD ciphers like AES-GCM.';
-                els.warningMessage.classList.add('visible');
+                if (toggles.noFs.checked) {
+                    els.warningMessage.textContent = 'TLS 1.2 + CBC: vulnerable to padding oracle attacks (Lucky13, BEAST) and timing side-channels. POODLE targets SSLv3 CBC specifically. TLS 1.3 eliminates CBC entirely — only AEAD ciphers (AES-GCM, ChaCha20-Poly1305) are permitted.';
+                    els.warningMessage.classList.add('visible');
+                } else {
+                    els.failureMessage.textContent = 'Handshake failed: TLS 1.3 does not support CBC cipher suites. Only AEAD modes (AES-GCM, ChaCha20-Poly1305) are permitted. The server rejected the ClientHello.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
             }
 
             // Disable next if halted or at end
