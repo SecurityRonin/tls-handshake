@@ -85,11 +85,7 @@
         .arrow-label.dir-left { color: #3fb950; }
         .arrow-label.dir-right { color: #58a6ff; }
 
-        /* Cert chain */
-        #cert-chain { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; width: 100%; max-width: 500px; }
-        #cert-chain.visible { display: block; }
-        .cert-node { padding: 0.4rem 0.8rem; margin: 0.3rem 0; border-left: 3px solid #238636; background: #0d1117; border-radius: 0 4px 4px 0; font-size: 0.75rem; }
-        .cert-node:first-child { border-left-color: #58a6ff; }
+        /* Cert chain removed — info is in the protocol tree */
 
         /* Wireshark 3-pane */
         .ws-toolbar {
@@ -344,17 +340,16 @@
     <!-- Decrypt Callout -->
     <div id="decrypt-callout">TLS 1.3 encrypts everything after ServerHello — without the session keys, packets 3-6 appear as opaque "Application Data."</div>
 
-    <!-- Cert chain (hidden by default) -->
-    <div id="cert-chain">
-        <div class="cert-node">Root CA <span style="color:#8b949e;font-size:0.7rem;">← trust anchor in client store, not transmitted</span></div>
-        <div class="cert-node">&nbsp;&nbsp;Intermediate CA</div>
-        <div class="cert-node">&nbsp;&nbsp;&nbsp;&nbsp;Leaf Certificate (server)</div>
-    </div>
-
     </div><!-- /.left-col -->
 
     <!-- Right Panel -->
     <div class="right-panel">
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="next-step">Next Step</button>
+            <button id="reset">Reset</button>
+        </div>
 
         <!-- Step indicator & description -->
         <div>
@@ -368,12 +363,6 @@
         <div id="connection-status">Connection secure</div>
         <div id="failure-message"></div>
         <div id="warning-message"></div>
-
-        <!-- Controls -->
-        <div class="controls">
-            <button id="next-step">Next Step</button>
-            <button id="reset">Reset</button>
-        </div>
 
         <!-- What-If Toggles -->
         <div class="toggles">
@@ -415,7 +404,6 @@
             arrowDisplay: document.getElementById('arrow-display'),
             arrowLabel: document.getElementById('arrow-label'),
             arrowLine: document.getElementById('arrow-line'),
-            certChain: document.getElementById('cert-chain'),
             connectionStatus: document.getElementById('connection-status'),
             failureMessage: document.getElementById('failure-message'),
             warningMessage: document.getElementById('warning-message'),
@@ -725,6 +713,16 @@
             [H('0000','17 03 03 10 00 d4 e8 fc 10 24 38 4c 60 74 88 9c','.........$8L`t..'),H('0010','b0 c4 d8 ec 00 14 28 3c 50 64 78 8c a0 b4 c8 dc','......(<Pdx.....'),],
         ];
 
+        // TLS 1.2 + CBC hex — same as hexDowngrade but ServerHello byte 0x009d→0x0035 (AES-256-CBC)
+        const hexDowngradeCBC = [
+            hexDowngrade[0],
+            [H('0000','16 03 03 00 51 02 00 00 4d 03 03 a8 c4 e1 f0 00','....Q...M.......'),H('0010','6a 2b 19 d7 83 4e f5 c0 b1 a2 38 9d e7 54 6c 0f','j+...N....8..Tl.'),H('0020','00 35 00 00 25 16 03 03 04 6c 0b 00 04 68 00 04','..5.%....l...h..'),H('0030','65 00 04 62 30 82 04 5e 30 82 03 46 a0 03 02 01','e..b0..^0..F....'),],
+            hexDowngrade[2],
+            hexDowngrade[3],
+            hexDowngrade[4],
+            hexDowngrade[5],
+        ];
+
         // Wizard labels per scenario
         const wizardLabelsTLS13 = ['1. ClientHello','2. ServerHello','3. Certificate','4. Client Finished','5. App Data','6. Complete'];
         const wizardLabelsTLS12 = ['1. ClientHello','2. Certificate','3. Key Exchange','4. Server Finished','5. App Data','6. Complete'];
@@ -786,12 +784,6 @@
             els.arrowLine.className = 'arrow-line ' + s.arrowDir;
             els.arrowLabel.className = 'arrow-label dir-' + s.arrowDir;
 
-            // Cert chain
-            if (s.showCertChain) {
-                els.certChain.classList.add('visible');
-            } else {
-                els.certChain.classList.remove('visible');
-            }
 
             // Connection status
             if (s.showStatus && !isDowngrade) {
@@ -811,7 +803,7 @@
             }).join('');
 
             // Hex pane — columnar layout
-            const hexRows = isDowngrade ? hexDowngrade[idx]
+            const hexRows = isDowngrade ? (toggles.cbc.checked ? hexDowngradeCBC : hexDowngrade)[idx]
                           : state.keysLoaded ? hexDecrypted[idx]
                           : hexEncrypted[idx];
             els.wsHex.innerHTML = hexRows.map(r =>
@@ -827,14 +819,16 @@
             // Check toggles
             state.halted = false;
             const step = idx + 1;
+            // In TLS 1.2 downgrade the Certificate arrives at step 2; in TLS 1.3 at step 3
+            const certStep = toggles.noFs.checked ? 2 : 3;
 
-            if (step === 3 && toggles.expiredCert.checked) {
+            if (step === certStep && toggles.expiredCert.checked) {
                 els.failureMessage.textContent = 'Handshake failed: certificate has expired. The server certificate validity period has ended.';
                 els.failureMessage.classList.add('visible');
                 state.halted = true;
             }
 
-            if (step === 3 && toggles.mitm.checked) {
+            if (step === certStep && toggles.mitm.checked) {
                 els.failureMessage.textContent = 'Handshake failed: the MITM proxy presented a certificate signed by an untrusted CA (or the CertificateVerify signature is invalid). The client cannot authenticate the server — connection aborted.';
                 els.failureMessage.classList.add('visible');
                 state.halted = true;
@@ -861,10 +855,17 @@
             // Disable next if halted or at end
             els.nextStep.disabled = state.halted || step >= 6;
 
-            // If halted, cert validation failed — authentication and encryption were not established
+            // Correct pillar state for failure scenarios
             if (state.halted) {
-                pillars.authentication.classList.remove('active');
-                pillars.encryption.classList.remove('active');
+                if (step === 2 && toggles.cbc.checked && !toggles.noFs.checked) {
+                    // TLS 1.3: server aborted at ServerHello — key exchange never completed
+                    pillars.keyExchange.classList.remove('active');
+                } else {
+                    // Cert failure: authentication was not established.
+                    // In TLS 1.3 the cert flight is sent encrypted (encryption WAS in use — keep it).
+                    // In TLS 1.2 downgrade encryption is not yet active at the cert step (no-op).
+                    pillars.authentication.classList.remove('active');
+                }
             }
 
             // Lock toggles once handshake has started; unlock only at step 1

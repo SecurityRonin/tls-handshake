@@ -71,20 +71,21 @@ test.describe('TLS 1.3 Happy Path', () => {
         await expect(page.locator('#pillar-key-exchange')).toHaveClass(/active/);
     });
 
-    test('step 2: ServerHello — authentication pillar also lights up', async ({ page }) => {
+    test('step 2: ServerHello — only key exchange pillar active (auth not yet established)', async ({ page }) => {
         await page.goto('/');
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 2');
         await expect(page.locator('#pillar-key-exchange')).toHaveClass(/active/);
-        await expect(page.locator('#pillar-authentication')).toHaveClass(/active/);
+        await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
     });
 
-    test('step 3: Certificate Verify — shows certificate chain', async ({ page }) => {
+    test('step 3: Certificate — authentication and encryption pillars light up', async ({ page }) => {
         await page.goto('/');
         await page.click('#next-step');
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 3');
-        await expect(page.locator('#cert-chain')).toBeVisible();
+        await expect(page.locator('#pillar-authentication')).toHaveClass(/active/);
+        await expect(page.locator('#pillar-encryption')).toHaveClass(/active/);
     });
 
     test('step 4: Key Derivation — encryption pillar lights up', async ({ page }) => {
@@ -157,12 +158,24 @@ test.describe('What-If Toggles', () => {
         await expect(page.locator('#warning-message')).toContainText(/forward secrecy|recorded traffic/i);
     });
 
-    test('CBC mode: shows padding oracle warning', async ({ page }) => {
+    test('CBC mode (TLS 1.3): handshake fails at step 2 with failure message', async ({ page }) => {
         await page.goto('/');
         await page.click('#toggle-cbc');
-        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 2');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText(/CBC|AEAD/i);
+        // Next step must be disabled — handshake halted
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('CBC mode (TLS 1.2 downgrade): shows warning from step 3 onward', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#toggle-no-fs');
+        await page.click('#toggle-cbc');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#warning-message')).toBeVisible();
-        await expect(page.locator('#warning-message')).toContainText(/CBC|padding/i);
+        await expect(page.locator('#warning-message')).toContainText(/CBC|Lucky13|BEAST/i);
     });
 });
 

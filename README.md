@@ -13,7 +13,7 @@ Every HTTPS connection starts with a handshake. This demo walks through the TLS 
 1. **ClientHello** — Key Exchange begins (ECDHE key share sent)
 2. **ServerHello** — Key exchange complete; handshake traffic keys derived. Authentication not yet established.
 3. **Certificate** — Server authenticates: encrypted Certificate + CertificateVerify flight verified. Encryption already active.
-4. **Client Finished** — Both sides hold the same application traffic keys (HKDF from ECDHE shared secret)
+4. **Client Finished** — Both sides derive complementary client/server application traffic secrets via HKDF (not one shared key)
 5. **Encrypted Data** — Integrity (AEAD-authenticated records flow; auth tag is integral to the cipher, not a separate HMAC)
 6. **Done** — All four pillars active. Connection secure.
 
