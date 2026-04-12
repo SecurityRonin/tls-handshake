@@ -828,15 +828,17 @@
                 els.warningMessage.classList.add('visible');
             }
 
-            if (step === 5 && toggles.cbc.checked) {
-                if (toggles.noFs.checked) {
-                    els.warningMessage.textContent = 'TLS 1.2 + CBC: vulnerable to padding oracle attacks (Lucky13, BEAST) and timing side-channels. POODLE targets SSLv3 CBC specifically. TLS 1.3 eliminates CBC entirely — only AEAD ciphers (AES-GCM, ChaCha20-Poly1305) are permitted.';
-                    els.warningMessage.classList.add('visible');
-                } else {
-                    els.failureMessage.textContent = 'Handshake failed: TLS 1.3 does not support CBC cipher suites. Only AEAD modes (AES-GCM, ChaCha20-Poly1305) are permitted. The server rejected the ClientHello.';
-                    els.failureMessage.classList.add('visible');
-                    state.halted = true;
-                }
+            if (step === 2 && toggles.cbc.checked && !toggles.noFs.checked) {
+                // TLS 1.3 rejects CBC at ServerHello — negotiation fails immediately
+                els.failureMessage.textContent = 'Handshake failed at ServerHello: TLS 1.3 does not support CBC cipher suites. The server found no acceptable AEAD cipher in the ClientHello and aborted. Only AES-GCM and ChaCha20-Poly1305 are permitted in TLS 1.3.';
+                els.failureMessage.classList.add('visible');
+                state.halted = true;
+            }
+
+            if (step >= 3 && toggles.cbc.checked && toggles.noFs.checked) {
+                // TLS 1.2 + CBC — cipher is now active, warn about its weaknesses
+                els.warningMessage.textContent = 'TLS 1.2 + CBC active: vulnerable to padding oracle attacks (Lucky13, BEAST) and timing side-channels. POODLE targets SSLv3 CBC specifically. TLS 1.3 eliminates CBC entirely — only AEAD ciphers are permitted.';
+                els.warningMessage.classList.add('visible');
             }
 
             // Disable next if halted or at end
@@ -897,6 +899,9 @@
         els.loadKeys.addEventListener('click', () => {
             state.keysLoaded = true;
             els.loadKeys.textContent = 'Keys loaded';
+            els.decryptCallout.textContent = toggles.noFs.checked
+                ? 'TLS 1.2: only application data (packets 5-6) is encrypted. Handshake messages including the Certificate are sent in cleartext — no SSLKEYLOGFILE needed to read them.'
+                : 'TLS 1.3 encrypts everything after ServerHello — without the session keys, packets 3-6 appear as opaque "Application Data."';
             els.decryptCallout.classList.add('visible');
             render();
         });
