@@ -532,3 +532,67 @@ test.describe('What-If Scenarios — Extended', () => {
         await expect(page.locator('#warning-message')).not.toContainText('Renegotiation injection');
     });
 });
+
+test.describe('Scenario Protocol Trees', () => {
+    test('FREAK: step 2 tree shows export cipher', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-freak');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('EXPORT');
+    });
+
+    test('expired cert: step 3 tree shows EXPIRED', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-expired-cert');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('EXPIRED');
+    });
+
+    test('MITM: step 3 tree shows Evil Corp issuer', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-mitm');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('Evil Corp');
+    });
+
+    test('cert-pin: step 3 tree shows SPKI mismatch', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-cert-pin');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('SPKI');
+    });
+
+    test('PSK: step 2 tree shows pre_shared_key extension', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-psk');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('pre_shared_key');
+    });
+
+    test('SNI: step 1 tree shows plaintext server name', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-sni');
+        await expect(page.locator('#ws-detail')).toContainText('example.com');
+    });
+
+    test('mTLS: step 4 tree shows client Certificate record', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-mtls');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('CertificateRequest');
+    });
+
+    test('0-RTT: step 5 tree shows Early Data record', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-zero-rtt');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('Early Data');
+    });
+
+    test('renego: step 5 tree shows injected prefix', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-renego');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('ATTACKER');
+    });
+});
