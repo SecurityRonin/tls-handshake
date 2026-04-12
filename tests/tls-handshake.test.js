@@ -207,6 +207,18 @@ test.describe('Wireshark Packet List', () => {
         await expect(page.locator('.ws-packet-row').first()).toContainText('Client Hello');
     });
 
+    test('client-to-server rows have data-dir="c2s"', async ({ page }) => {
+        await page.goto('/');
+        // Packet 1 (ClientHello) is client→server
+        await expect(page.locator('.ws-packet-row').first()).toHaveAttribute('data-dir', 'c2s');
+    });
+
+    test('server-to-client rows have data-dir="s2c"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#next-step'); // reveal row 2 (ServerHello — server→client)
+        await expect(page.locator('.ws-packet-row:nth-child(2)')).toHaveAttribute('data-dir', 's2c');
+    });
+
     test('clicking a row highlights it', async ({ page }) => {
         await page.goto('/');
         await page.click('#next-step'); // reveal row 2

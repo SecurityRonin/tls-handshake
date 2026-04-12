@@ -119,9 +119,9 @@
         .ws-packet-row.selected { background: #1f3a5f !important; color: #fff; }
         .ws-packet-row.ws-row-hidden { display: none; }
         /* Wireshark-style protocol colouring (dark-theme adapted) */
-        .ws-packet-row[data-proto="TLSv1.3"] { background: rgba(88, 100, 220, 0.10); }
-        .ws-packet-row[data-proto="TLSv1.2"] { background: rgba(210, 153, 34, 0.10); }
-        .ws-packet-row[data-proto="HTTP/2"]  { background: rgba(63, 185, 80, 0.10); }
+        /* Direction-based row colouring — mirrors the arrow colours */
+        .ws-packet-row[data-dir="c2s"] { background: rgba(56, 139, 253, 0.09); }   /* client→server: blue */
+        .ws-packet-row[data-dir="s2c"] { background: rgba(63, 185, 80,  0.09); }   /* server→client: green */
         .ws-no { width: 40px; flex-shrink: 0; color: #8b949e; }
         .ws-time { width: 60px; flex-shrink: 0; }
         .ws-src { width: 130px; flex-shrink: 0; }
@@ -785,6 +785,7 @@
                 const sd = data[i].src ? data[i] : originalSrcDst[i];
                 row.querySelector('.ws-src').textContent = sd.src;
                 row.querySelector('.ws-dst').textContent = sd.dst;
+                row.dataset.dir = sd.src === '192.168.1.10' ? 'c2s' : 's2c';
             });
         }
 
