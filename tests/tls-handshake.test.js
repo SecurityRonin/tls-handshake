@@ -467,7 +467,7 @@ test.describe('What-If Scenarios — Extended', () => {
         await expect(page.locator('#warning-message')).not.toContainText('Mutual TLS');
     });
 
-    // ── 6. FREAK / Logjam — Export Cipher Downgrade ──────────────────────────
+    // ── 6. FREAK — Export RSA Downgrade ──────────────────────────────────────
     test('FREAK: radio exists', async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('#scenario-freak')).toBeVisible();
@@ -503,7 +503,36 @@ test.describe('What-If Scenarios — Extended', () => {
         await expect(page.locator('#warning-message')).not.toContainText('FREAK');
     });
 
-    // ── 7. TLS Renegotiation Injection ───────────────────────────────────────
+    // ── 7. Logjam — Export DHE Downgrade ─────────────────────────────────────
+    test('Logjam: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-logjam')).toBeVisible();
+    });
+
+    test('Logjam: warning appears at step 2 (ServerHello) on TLS 1.2 path', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-logjam');
+        await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 2');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('Logjam');
+    });
+
+    test('Logjam: next step is NOT disabled (attack succeeds silently, no halt)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-logjam');
+        await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('Logjam: keyExchange pillar remains active (handshake completes with weak DHE)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-logjam');
+        await page.click('#next-step');
+        await expect(page.locator('#pillar-key-exchange')).toHaveClass(/active/);
+    });
+
+    // ── 8. TLS Renegotiation Injection ───────────────────────────────────────
     test('renego: radio exists', async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('#scenario-renego')).toBeVisible();
@@ -539,6 +568,14 @@ test.describe('Scenario Protocol Trees', () => {
         await page.click('#scenario-freak');
         await page.click('#next-step');
         await expect(page.locator('#ws-detail')).toContainText('EXPORT');
+    });
+
+    test('Logjam: step 2 tree shows weak DH parameters', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-logjam');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('Server Key Exchange');
+        await expect(page.locator('#ws-detail')).toContainText('512-bit export group');
     });
 
     test('expired cert: step 3 tree shows EXPIRED', async ({ page }) => {

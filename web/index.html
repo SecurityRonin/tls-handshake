@@ -439,7 +439,11 @@
             </div>
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-freak" value="freak">
-                <label for="scenario-freak">Export cipher downgrade (FREAK/Logjam)</label>
+                <label for="scenario-freak">Export RSA downgrade (FREAK)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-logjam" value="logjam">
+                <label for="scenario-logjam">Export DHE downgrade (Logjam)</label>
             </div>
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-renego" value="renego">
@@ -483,12 +487,13 @@
         function getScenario() {
             const v = (document.querySelector('input[name="scenario"]:checked') || {}).value || 'none';
             return {
-                noFs:        ['tls12','tls12-cbc','tls12-expired','freak','renego'].includes(v),
+                noFs:        ['tls12','tls12-cbc','tls12-expired','freak','logjam','renego'].includes(v),
                 cbc:         v === 'tls12-cbc',
                 expiredCert: v === 'expired-cert' || v === 'tls12-expired',
                 mitm:        v === 'mitm',
                 certPin:     v === 'cert-pin',
                 freak:       v === 'freak',
+                logjam:      v === 'logjam',
                 mtls:        v === 'mtls',
                 psk:         v === 'psk',
                 renego:      v === 'renego',
@@ -523,6 +528,15 @@
         const packetInfoDowngrade = [
             { info: 'Client Hello', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
             { info: 'Server Hello, Certificate, Server Hello Done', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
+            { info: 'Client Key Exchange, Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: 'Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
+            { info: 'GET / HTTP/1.1', proto: 'HTTP/1.1', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: '200 OK', proto: 'HTTP/1.1', src: '93.184.216.34', dst: '192.168.1.10' },
+        ];
+
+        const packetInfoLogjam = [
+            { info: 'Client Hello', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
+            { info: 'Server Hello, Certificate, Server Key Exchange, Server Hello Done', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
             { info: 'Client Key Exchange, Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '192.168.1.10', dst: '93.184.216.34' },
             { info: 'Change Cipher Spec, Finished', proto: 'TLSv1.2', src: '93.184.216.34', dst: '192.168.1.10' },
             { info: 'GET / HTTP/1.1', proto: 'HTTP/1.1', src: '192.168.1.10', dst: '93.184.216.34' },
@@ -700,6 +714,15 @@
             { label: 'Step 6', title: 'Complete (degraded)', desc: 'TLS 1.2 connection established — no forward secrecy. The session key is bound to the server\'s long-lived RSA private key rather than an ephemeral ECDHE share.', arrowDir: 'left', arrowText: 'Encrypted response', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: false, newProps: [] },
         ];
 
+        const stepsLogjam = [
+            { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello. Without a supported_versions extension advertising TLS 1.3, the server falls back to TLS 1.2. No key_share is sent yet — export-grade DHE parameters will arrive from the server.', arrowDir: 'right', arrowText: 'Cipher suites (includes export DHE)', activePillars: ['keyExchange'], newProps: [{key:'kx', label:'Key Exchange →'}] },
+            { label: 'Step 2', title: 'Certificate', desc: 'Server sends ServerHello, Certificate, ServerKeyExchange, and ServerHelloDone — all in cleartext. ServerKeyExchange carries weak export-DHE parameters, enabling the Logjam attack.', arrowDir: 'left', arrowText: 'ServerHello, Certificate, ServerKeyExchange, ServerHelloDone', activePillars: ['keyExchange', 'authentication'], showCertChain: true, newProps: [{key:'auth', label:'Auth (cleartext)'}] },
+            { label: 'Step 3', title: 'Key Exchange', desc: 'Client sends its ephemeral DH share in ClientKeyExchange. Both sides derive the premaster secret from the weak export-DHE group. An attacker can solve the shared secret against common 512-bit groups, so there is no effective forward secrecy.', arrowDir: 'right', arrowText: 'ClientKeyExchange (DH public share), CCS, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'], newProps: [{key:'enc', label:'Encrypted'}] },
+            { label: 'Step 4', title: 'Server Finished', desc: 'Server derives session keys using the negotiated export-DHE shared secret and sends Change Cipher Spec + Finished. Handshake complete — but weak DH parameters make the session retrospectively decryptable.', arrowDir: 'left', arrowText: 'Change Cipher Spec, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'], newProps: [] },
+            { label: 'Step 5', title: 'App Data', desc: 'Application data flows encrypted. Because the handshake used weak export-DHE parameters, a recorded session can be decrypted after solving the DH exchange or using precomputation against common groups.', arrowDir: 'right', arrowText: 'Encrypted application data', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], newProps: [{key:'int', label:'Integrity ✓'}] },
+            { label: 'Step 6', title: 'Complete (degraded)', desc: 'TLS 1.2 connection established — apparent DHE, but weak export parameters undermine forward secrecy in practice.', arrowDir: 'left', arrowText: 'Encrypted response', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: false, newProps: [] },
+        ];
+
         // TLS 1.2 protocol tree per packet
         const detailDowngrade = [
             [ // Packet 1 - TLS 1.2 ClientHello
@@ -789,14 +812,33 @@
             T('▼ Handshake Protocol: Server Hello', 1, 'layer'),
             T('Handshake Type: <span class="ws-tree-value">Server Hello (2)</span>', 2),
             T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span>', 2),
-            T('▼ Cipher Suite: <span class="ws-tree-value">TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003)</span> <span class="ws-tree-warn">← illustrative FREAK-style export-RSA downgrade ❌</span>', 2, 'warn'),
+            T('▼ Cipher Suite: <span class="ws-tree-value">TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003)</span> <span class="ws-tree-warn">← illustrative FREAK export-RSA downgrade ❌</span>', 2, 'warn'),
             T('MITM stripped strong suites from ClientHello — server selected the only remaining export-grade RSA suite', 3, 'warn'),
             T('FREAK exploited export RSA: the weak temporary RSA public key could be factored, recovering the premaster secret', 3, 'warn'),
-            T('This example uses an RC4-40 export suite to visualize the downgrade. Logjam is analogous in spirit but targets export DHE, not RC4.', 3, 'warn'),
+            T('This example is intentionally FREAK-specific: export RSA, not export DHE.', 3, 'warn'),
             T('RSA key exchange: no forward secrecy — compromise of the static private key exposes recorded sessions', 3, 'warn'),
             T('Compression: <span class="ws-tree-value">null (0)</span>', 2),
             T('Handshake completes — client receives no alert; the downgrade is silent ❌', 0, 'warn'),
             T('Fix: disable export ciphers in server config; TLS 1.3-only servers are fully immune (no export suites exist)', 0, 'warn'),
+        ];
+
+        const detailScenarioLogjam = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.2 Record Layer: Handshake Protocols: Server Hello + Certificate + Server Key Exchange + Server Hello Done', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span>', 1),
+            T('▼ Handshake Protocol: Server Hello', 1, 'layer'),
+            T('Cipher Suite: <span class="ws-tree-value">TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA (0x0011)</span> <span class="ws-tree-warn">← illustrative Logjam-style export-DHE downgrade ❌</span>', 2, 'warn'),
+            T('▼ Handshake Protocol: Certificate', 1, 'layer'),
+            T('Leaf certificate: <span class="ws-tree-value">CN=www.example.com</span>', 2),
+            T('▼ Handshake Protocol: Server Key Exchange', 1, 'layer'),
+            T('DH prime p: <span class="ws-tree-value">512-bit export group</span> <span class="ws-tree-warn">← intentionally weak</span>', 2, 'warn'),
+            T('DH generator g: <span class="ws-tree-value">2</span>', 2),
+            T('Server public value Ys: <span class="ws-tree-value">7c 92 ... 4f</span>', 2),
+            T('Signature: <span class="ws-tree-value">RSA signature over DH params</span> <span class="ws-tree-warn">← authentic, but authenticates a weak group</span>', 2, 'warn'),
+            T('Logjam exploited weak export DHE: common 512-bit groups permit precomputation, then fast recovery of the shared secret for captured sessions', 0, 'warn'),
+            T('Handshake completes with no obvious client-visible failure if export DHE is accepted ❌', 0, 'warn'),
+            T('Fix: disable export DHE suites, use strong finite-field groups or ECDHE, prefer TLS 1.3-only deployments', 0, 'warn'),
         ];
 
         const detailScenarioExpiredCert = [
@@ -879,7 +921,7 @@
             T('Version: <span class="ws-tree-value">TLS 1.0 (0x0301)</span> <span class="ws-tree-warn">← legacy compat field</span>', 1),
             T('▼ Handshake Protocol: Client Hello', 1, 'layer'),
             T('Random: <span class="ws-tree-value">7f 3a 9b 2c ... d4 e1 (32 bytes)</span>', 2),
-            T('Session ID: <span class="ws-tree-value">(empty — TLS 1.3)</span>', 2),
+            T('Session ID Length: <span class="ws-tree-value">32</span> <span class="ws-tree-warn">← legacy_session_id for middlebox compatibility</span>', 2),
             T('Cipher Suites: <span class="ws-tree-value">TLS_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256</span>', 2),
             T('▼ Extensions:', 2, 'layer'),
             T('▼ Extension: server_name (0) <span class="ws-tree-warn">← PLAINTEXT — visible before encryption</span>', 3, 'warn'),
@@ -971,6 +1013,18 @@
             hexDowngrade[2], hexDowngrade[3], hexDowngrade[4], hexDowngrade[5],
         ];
 
+        const hexLogjam = [
+            hexDowngrade[0],
+            [H('0000','16 03 03 00 81 02 00 00 7d 03 03 a8 c4 e1 f0 6a','........}......j'),
+             H('0010','2b 19 d7 83 4e f5 c0 b1 a2 38 9d e7 54 6c 0f 11','+...N....8..Tl..'),
+             H('0020','22 33 44 55 66 77 88 99 00 11 00 00 16 03 03 02','"3DUfw..........'),
+             H('0030','2c 0c 00 02 28 00 80 9f a3 b1 c7 d5 ... 02 01 02',',...(...........')], // 0x0011 = TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA
+            [H('0000','16 03 03 00 46 10 00 00 42 40 7a 91 c2 d3 e4 f5','....F...B@z.....'),
+             H('0010','06 17 28 39 4a 5b 6c 7d 8e 9f a0 b1 c2 d3 e4 f5','..(9J[l}........'),
+             H('0020','14 03 03 00 01 01 16 03 03 00 28 ab cd ef 01 23','..........(...#')],
+            hexDowngrade[3], hexDowngrade[4], hexDowngrade[5],
+        ];
+
         // TLS 1.2 + CBC hex — same as hexDowngrade but ServerHello byte 0x009d→0x0035 (AES-256-CBC)
         const hexDowngradeCBC = [
             hexDowngrade[0],
@@ -999,12 +1053,15 @@
 
         function updatePacketList() {
             const sc = getScenario();
-            const data = sc.noFs       ? packetInfoDowngrade
+            const data = sc.logjam     ? packetInfoLogjam
+                       : sc.noFs       ? packetInfoDowngrade
                        : state.keysLoaded ? packetInfoDecrypted
                        :                   packetInfoEncrypted;
             rows.forEach((row, i) => {
                 // FREAK: server accepts export cipher in ServerHello — attack succeeds silently
-                const info  = (sc.freak && i === 1) ? 'Server Hello (cipher: TLS_RSA_EXPORT_WITH_RC4_40_MD5 0x0003), Certificate, Server Hello Done' : data[i].info;
+                const info  = (sc.freak && i === 1) ? 'Server Hello (cipher: TLS_RSA_EXPORT_WITH_RC4_40_MD5 0x0003), Certificate, Server Hello Done'
+                            : (sc.logjam && i === 1) ? 'Server Hello (cipher: TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA 0x0011), Certificate, Server Key Exchange, Server Hello Done'
+                            : data[i].info;
                 const proto = data[i].proto;
                 row.querySelector('.ws-info').textContent = info;
                 row.querySelector('.ws-proto').textContent = proto;
@@ -1020,7 +1077,7 @@
             const sc = getScenario();
             const idx = state.selectedRow;
             const isDowngrade = sc.noFs;
-            const s = isDowngrade ? stepsDowngrade[idx] : steps[idx];
+            const s = sc.logjam ? stepsLogjam[idx] : (isDowngrade ? stepsDowngrade[idx] : steps[idx]);
 
             // Update row selection — reveal rows up to current step
             rows.forEach((row, i) => {
@@ -1030,7 +1087,7 @@
 
             // Wizard step labels + property chips
             const wLabels = isDowngrade ? wizardLabelsTLS12 : wizardLabelsTLS13;
-            const allSteps = isDowngrade ? stepsDowngrade : steps;
+            const allSteps = sc.logjam ? stepsLogjam : (isDowngrade ? stepsDowngrade : steps);
             wizardSteps.forEach((ws, i) => {
                 ws.classList.toggle('active', i === idx);
                 ws.querySelector('.ws-label').textContent = wLabels[i];
@@ -1084,6 +1141,7 @@
             // Scenario-specific protocol tree overlays
             if (isDowngrade) {
                 if (sc.freak  && idx === 1) detailNodes = detailScenarioFREAK;
+                if (sc.logjam && idx === 1) detailNodes = detailScenarioLogjam;
                 if (sc.renego && idx === 4) detailNodes = detailScenarioRenego;
             } else {
                 if (sc.expiredCert && idx === 2) detailNodes = detailScenarioExpiredCert;
@@ -1103,6 +1161,7 @@
 
             // Hex pane — columnar layout
             const hexRows = sc.freak     ? hexFREAK[idx]
+                          : sc.logjam    ? hexLogjam[idx]
                           : isDowngrade  ? (sc.cbc ? hexDowngradeCBC : hexDowngrade)[idx]
                           : state.keysLoaded ? hexDecrypted[idx]
                           : hexEncrypted[idx];
@@ -1145,9 +1204,15 @@
                 els.warningMessage.classList.add('visible');
             }
 
-            // FREAK/Logjam — fires at step 2 (ServerHello) in TLS 1.2 downgrade path
+            // FREAK — fires at step 2 (ServerHello) in TLS 1.2 downgrade path
             if (step === 2 && sc.freak) {
-                els.warningMessage.textContent = 'FREAK/Logjam downgrade: the MITM stripped strong cipher suites from the ClientHello. This illustrative TLS 1.2 trace shows the server accepting an export-grade RSA suite — TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003). In FREAK, the weak export RSA key is factored to recover the premaster secret; Logjam is the analogous attack against export DHE. The downgrade can succeed with no client-visible alert. TLS 1.3-only servers are immune because export suites do not exist.';
+                els.warningMessage.textContent = 'FREAK downgrade: the MITM stripped strong cipher suites from the ClientHello. This illustrative TLS 1.2 trace shows the server accepting an export-grade RSA suite — TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003). In FREAK, the weak export RSA key is factored to recover the premaster secret. The downgrade can succeed with no client-visible alert. TLS 1.3-only servers are immune because export suites do not exist.';
+                els.warningMessage.classList.add('visible');
+            }
+
+            // Logjam — fires at step 2 (ServerHello + ServerKeyExchange) in TLS 1.2 downgrade path
+            if (step === 2 && sc.logjam) {
+                els.warningMessage.textContent = 'Logjam downgrade: the MITM stripped strong cipher suites from the ClientHello. This illustrative TLS 1.2 trace shows the server accepting an export-DHE suite and sending weak 512-bit DH parameters in ServerKeyExchange. With common export groups, attackers can precompute against the group and then recover the shared secret for captured sessions. TLS 1.3-only servers are immune because export DHE suites do not exist.';
                 els.warningMessage.classList.add('visible');
             }
 

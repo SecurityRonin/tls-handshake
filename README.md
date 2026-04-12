@@ -40,7 +40,8 @@ Toggle scenarios to see how the handshake changes or breaks:
 | **TLS 1.2 downgrade (RSA)** | Full downgrade — RSA key exchange, no forward secrecy |
 | **TLS 1.2 + CBC cipher** | Warning from step 3 — Lucky13/POODLE exploit CBC padding oracles; BEAST exploits predictable TLS 1.0 CBC IVs (chosen-plaintext, not a padding oracle) |
 | **TLS 1.2 + expired certificate** | Step 2 fails — certificate validity check |
-| **Export RSA Downgrade (FREAK-style)** | Step 2 — illustrative TLS 1.2 server silently accepts an export-grade RSA suite; downgrade succeeds with no client alert |
+| **Export RSA Downgrade (FREAK)** | Step 2 — illustrative TLS 1.2 server silently accepts an export-grade RSA suite; downgrade succeeds with no client alert |
+| **Export DHE Downgrade (Logjam)** | Step 2 — illustrative TLS 1.2 server sends weak export-DHE parameters in ServerKeyExchange; shared secret becomes recoverable |
 | **Renegotiation Injection** | Step 5 — pre-RFC 5746 TLS 1.2 allows attacker prefix injection via unauthenticated renegotiation |
 
 ## Development
@@ -58,7 +59,7 @@ python3 -m http.server 3009 --directory web
 npm test
 ```
 
-77 Playwright E2E tests covering security headers, happy path, scenario toggles, and reset.
+91 Playwright E2E tests covering security headers, happy path, scenario toggles, and reset.
 
 ## Tech Stack
 
