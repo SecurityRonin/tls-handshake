@@ -479,7 +479,7 @@ test.describe('What-If Scenarios — Extended', () => {
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 2');
         await expect(page.locator('#failure-message')).toBeVisible();
-        await expect(page.locator('#failure-message')).toContainText('Export cipher downgrade');
+        await expect(page.locator('#failure-message')).toContainText('FREAK');
     });
 
     test('FREAK: next step is disabled (halts)', async ({ page }) => {
@@ -500,7 +500,7 @@ test.describe('What-If Scenarios — Extended', () => {
         await page.goto('/');
         await page.click('#scenario-tls12');
         await page.click('#next-step');
-        await expect(page.locator('#failure-message')).not.toContainText('Export cipher downgrade');
+        await expect(page.locator('#failure-message')).not.toContainText('FREAK');
     });
 
     // ── 7. TLS Renegotiation Injection ───────────────────────────────────────
