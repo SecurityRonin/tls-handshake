@@ -1030,3 +1030,36 @@ test.describe('Scenario Protocol Trees — New', () => {
         await expect(page.locator('#ws-detail')).toContainText('Strict-Transport-Security');
     });
 });
+
+test.describe('Scenario ordering', () => {
+    test('scenarios are ordered by pedagogical groups', async ({ page }) => {
+        await page.goto('/');
+        const values = await page.locator('.toggles input[type="radio"]').evaluateAll(
+            els => els.map(el => el.value)
+        );
+        const expected = [
+            // TLS 1.3 baseline & variations
+            'none', 'hrr', 'psk', 'zero-rtt', 'mtls',
+            // Certificate & auth failures
+            'expired-cert', 'hostname', 'weak-sig', 'ocsp', 'cert-pin', 'mitm', 'client-auth-fail',
+            // Privacy & extensions
+            'sni', 'ech', 'alpn', 'hsts', 'quic',
+            // Active attacks
+            'ticket-theft', 'record-tamper',
+            // TLS 1.2 downgrade
+            'tls12', 'tls12-cbc', 'tls12-expired', 'freak', 'logjam', 'renego',
+        ];
+        expect(values).toEqual(expected);
+    });
+
+    test('section labels appear in correct order', async ({ page }) => {
+        await page.goto('/');
+        const labels = await page.locator('.toggles .toggle-section-label').allTextContents();
+        expect(labels).toEqual([
+            'Certificate & Auth Failures',
+            'Privacy & Extensions',
+            'Active Attacks',
+            'TLS 1.2 Downgrade',
+        ]);
+    });
+});
