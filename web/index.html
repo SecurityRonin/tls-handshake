@@ -424,6 +424,50 @@
                 <input type="radio" name="scenario" id="scenario-mtls" value="mtls">
                 <label for="scenario-mtls">Mutual TLS (client certificate)</label>
             </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-alpn" value="alpn">
+                <label for="scenario-alpn">ALPN mismatch (no protocol negotiated)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-hrr" value="hrr">
+                <label for="scenario-hrr">HelloRetryRequest (unsupported key_share group)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-ocsp" value="ocsp">
+                <label for="scenario-ocsp">OCSP stapling failure / revoked certificate</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-hostname" value="hostname">
+                <label for="scenario-hostname">Hostname mismatch (wrong CN/SAN)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-weak-sig" value="weak-sig">
+                <label for="scenario-weak-sig">Weak signature algorithm (SHA-1 cert)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-quic" value="quic">
+                <label for="scenario-quic">QUIC / HTTP/3 contrast (educational)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-ticket-theft" value="ticket-theft">
+                <label for="scenario-ticket-theft">Session ticket theft (stolen PSK)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-record-tamper" value="record-tamper">
+                <label for="scenario-record-tamper">Record tampering (AEAD tag failure)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-client-auth-fail" value="client-auth-fail">
+                <label for="scenario-client-auth-fail">Client authentication failure (no client cert)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-ech" value="ech">
+                <label for="scenario-ech">ECH success (Encrypted Client Hello)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="radio" name="scenario" id="scenario-hsts" value="hsts">
+                <label for="scenario-hsts">HSTS (Strict-Transport-Security header)</label>
+            </div>
             <div class="toggle-section-label">TLS 1.2 Downgrade</div>
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-tls12" value="tls12">
@@ -499,6 +543,17 @@
                 renego:      v === 'renego',
                 sni:         v === 'sni',
                 zeroRtt:     v === 'zero-rtt',
+                alpn:        v === 'alpn',
+                hrr:         v === 'hrr',
+                ocsp:        v === 'ocsp',
+                hostnameMismatch: v === 'hostname',
+                weakSig:     v === 'weak-sig',
+                quic:        v === 'quic',
+                ticketTheft: v === 'ticket-theft',
+                recordTamper: v === 'record-tamper',
+                clientAuthFail: v === 'client-auth-fail',
+                ech:         v === 'ech',
+                hsts:        v === 'hsts',
             };
         }
 
@@ -721,6 +776,27 @@
             { label: 'Step 4', title: 'Server Finished', desc: 'Server derives session keys using the negotiated export-DHE shared secret and sends Change Cipher Spec + Finished. Handshake complete — but weak DH parameters make the session retrospectively decryptable.', arrowDir: 'left', arrowText: 'Change Cipher Spec, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'], newProps: [] },
             { label: 'Step 5', title: 'App Data', desc: 'Application data flows encrypted. Because the handshake used weak export-DHE parameters, a recorded session can be decrypted after solving the DH exchange or using precomputation against common groups.', arrowDir: 'right', arrowText: 'Encrypted application data', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], newProps: [{key:'int', label:'Integrity ✓'}] },
             { label: 'Step 6', title: 'Complete (degraded)', desc: 'TLS 1.2 connection established — apparent DHE, but weak export parameters undermine forward secrecy in practice.', arrowDir: 'left', arrowText: 'Encrypted response', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: false, newProps: [] },
+        ];
+
+        // HRR — 6-step model with extra round trip
+        const stepsHRR = [
+            { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello with x25519 key_share. Server doesn\'t support x25519 and will send HelloRetryRequest.', arrowDir: 'right', arrowText: 'ClientHello [key_share: x25519]', activePillars: ['keyExchange'], newProps: [{key:'kx', label:'Key Exchange →'}] },
+            { label: 'Step 2', title: 'HelloRetryRequest', desc: 'Server sends HelloRetryRequest (a ServerHello with magic random CF21AD74...). Client must retry with the requested group — one extra round trip.', arrowDir: 'left', arrowText: 'HelloRetryRequest [requested_group: secp256r1]', activePillars: ['keyExchange'], newProps: [] },
+            { label: 'Step 3', title: 'ClientHello₂', desc: 'Client retransmits ClientHello with secp256r1 key_share. Transcript hash of first ClientHello is preserved via message_hash construct.', arrowDir: 'right', arrowText: 'ClientHello₂ [key_share: secp256r1]', activePillars: ['keyExchange'], newProps: [] },
+            { label: 'Step 4', title: 'Certificate', desc: 'Server sends ServerHello + EncryptedExtensions + Certificate + CertificateVerify + Finished, all encrypted under handshake traffic keys derived from the secp256r1 key share. Authentication is now established.', arrowDir: 'left', arrowText: 'ServerHello, Certificate, CertificateVerify, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'], showCertChain: true, newProps: [{key:'auth', label:'Auth established'}, {key:'enc', label:'Handshake encrypted'}] },
+            { label: 'Step 5', title: 'Client Finished', desc: 'Client sends its Finished message — an HMAC over the entire handshake transcript including both ClientHello messages. Both sides derive application traffic secrets.', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], newProps: [{key:'int', label:'Integrity ✓'}, {key:'enc', label:'App keys active'}] },
+            { label: 'Step 6', title: 'Complete (+1 RTT)', desc: 'All four pillars satisfied. TLS 1.3 connection established — one extra round trip was required due to HelloRetryRequest. Use supported_groups extension advertising secp256r1 in the initial ClientHello to avoid the retry.', arrowDir: 'right', arrowText: 'Secure channel established (+1 RTT)', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: true, newProps: [] },
+        ];
+
+        const wizardLabelsHRR = ['1. ClientHello','2. HelloRetryReq','3. ClientHello₂','4. Certificate','5. Finished','6. Complete'];
+
+        const packetInfoHRR = [
+            { info: 'Client Hello [key_share: x25519]', proto: 'TLSv1.3' },
+            { info: 'Hello Retry Request [requested_group: secp256r1]', proto: 'TLSv1.3' },
+            { info: 'Client Hello [retry, key_share: secp256r1]', proto: 'TLSv1.3' },
+            { info: 'Server Hello, Change Cipher Spec, Application Data', proto: 'TLSv1.3' },
+            { info: 'Application Data', proto: 'TLSv1.3' },
+            { info: 'Application Data', proto: 'TLSv1.3' },
         ];
 
         // TLS 1.2 protocol tree per packet
@@ -994,6 +1070,179 @@
             T('Fix: RFC 5746 renegotiation_info extension; TLS 1.3-only deployments are immune', 0, 'warn'),
         ];
 
+        // New scenario protocol tree overlays
+        const detailScenarioALPN = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Application Data (encrypted handshake)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
+            T('▼ TLS Handshake (decrypted): EncryptedExtensions + Certificate + CertificateVerify + Finished', 1, 'layer'),
+            T('▼ EncryptedExtensions', 2, 'layer'),
+            T('▼ Extension: application_layer_protocol_negotiation (16)', 3, 'layer'),
+            T('ALPN Protocol: <span class="ws-tree-value">(empty)</span> <span class="ws-tree-warn">← no matching protocol; server returned no_application_protocol</span>', 4, 'warn'),
+            T('▼ Extension: no_application_protocol <span class="ws-tree-warn">← RFC 7301 §3.3: server could not negotiate a common protocol</span>', 3, 'warn'),
+            T('Client offered: <span class="ws-tree-value">h2, http/1.1</span>', 4),
+            T('Server supports: <span class="ws-tree-value">http/1.1 only</span> <span class="ws-tree-warn">← h2 not configured on server</span>', 4, 'warn'),
+            T('TLS handshake succeeds but HTTP/2 is not available — application must fall back to HTTP/1.1', 2, 'warn'),
+        ];
+
+        const detailScenarioHRR = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Handshake Protocol: HelloRetryRequest', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span> <span class="ws-tree-warn">← legacy field; HelloRetryRequest uses same structure as ServerHello</span>', 1),
+            T('▼ Handshake Protocol: HelloRetryRequest', 1, 'layer'),
+            T('Handshake Type: <span class="ws-tree-value">Server Hello (2)</span> <span class="ws-tree-warn">← HRR is structurally a ServerHello</span>', 2),
+            T('Random: <span class="ws-tree-value">CF 21 AD 74 E5 9A 61 11 BE 1D 8C 02 1E 65 B8 91</span>', 2),
+            T('         <span class="ws-tree-value">C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</span> <span class="ws-tree-warn">← magic constant SHA-256("HelloRetryRequest")</span>', 2, 'warn'),
+            T('▼ Extension: supported_versions (43)', 2, 'layer'),
+            T('Selected Version: <span class="ws-tree-value">TLS 1.3 (0x0304)</span>', 3),
+            T('▼ Extension: key_share (51) <span class="ws-tree-warn">← server requests a different group</span>', 2, 'layer'),
+            T('Selected Group: <span class="ws-tree-value">secp256r1 (0x0017)</span> <span class="ws-tree-warn">← client must retry with this group</span>', 3, 'warn'),
+            T('Client did not offer secp256r1 key_share — only x25519. Server does not support x25519. Extra RTT required.', 1, 'warn'),
+            T('Fix: include secp256r1 key_share in the initial ClientHello (RFC 8446 §4.2.8)', 0, 'warn'),
+        ];
+
+        const detailScenarioOCSP = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Application Data (encrypted handshake)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
+            T('▼ TLS Handshake (decrypted): EncryptedExtensions + Certificate + CertificateVerify + Finished', 1, 'layer'),
+            T('▼ EncryptedExtensions', 2, 'layer'),
+            T('▼ Extension: status_request (18) <span class="ws-tree-warn">← OCSP staple delivered inline</span>', 3, 'layer'),
+            T('▼ OCSPResponse', 4, 'layer'),
+            T('responseStatus: <span class="ws-tree-value">successful (0)</span>', 5),
+            T('▼ BasicOCSPResponse', 5, 'layer'),
+            T('▼ SingleResponse', 6, 'layer'),
+            T('certStatus: <span class="ws-tree-value">revoked</span> <span class="ws-tree-warn">← certificate has been revoked ❌</span>', 7, 'warn'),
+            T('revocationTime: <span class="ws-tree-value">2025-01-15 00:00:00 UTC</span>', 7, 'warn'),
+            T('revocationReason: <span class="ws-tree-value">keyCompromise (1)</span>', 7, 'warn'),
+            T('Client MUST abort: certificate is revoked — RFC 6960 §3.2', 2, 'warn'),
+        ];
+
+        const detailScenarioHostname = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Application Data (encrypted handshake)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
+            T('▼ TLS Handshake (decrypted): EncryptedExtensions + Certificate + CertificateVerify + Finished', 1, 'layer'),
+            T('▼ Certificate', 2, 'layer'),
+            T('▼ Certificate: other.example.com', 3, 'layer'),
+            T('Subject: <span class="ws-tree-value">CN=other.example.com, O=Other Corp</span> <span class="ws-tree-warn">← does not match SNI</span>', 4, 'warn'),
+            T('Issuer: <span class="ws-tree-value">CN=Let\'s Encrypt R3, O=Let\'s Encrypt</span>', 4),
+            T('Subject Alternative Names (SAN):', 4),
+            T('DNS: <span class="ws-tree-value">other.example.com</span> <span class="ws-tree-warn">← no entry for example.com</span>', 5, 'warn'),
+            T('TLS SNI: <span class="ws-tree-value">example.com</span>', 4),
+            T('Hostname mismatch ❌ — certificate CN/SAN does not match the requested hostname (RFC 2818 §3.1)', 2, 'warn'),
+            T('Client MUST abort — the server identity cannot be confirmed for example.com', 2, 'warn'),
+        ];
+
+        const detailScenarioWeakSig = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Application Data (encrypted handshake)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
+            T('▼ TLS Handshake (decrypted): EncryptedExtensions + Certificate + CertificateVerify + Finished', 1, 'layer'),
+            T('▼ Certificate', 2, 'layer'),
+            T('▼ Certificate: example.com', 3, 'layer'),
+            T('Subject: <span class="ws-tree-value">CN=example.com, O=Example Corp</span>', 4),
+            T('Issuer: <span class="ws-tree-value">CN=Old Legacy CA</span>', 4),
+            T('Signature Algorithm: <span class="ws-tree-value">SHA-1WithRSAEncryption (1.2.840.113549.1.1.5)</span> <span class="ws-tree-warn">← SHA-1 is broken ❌</span>', 4, 'warn'),
+            T('Validity: <span class="ws-tree-value">Jan 1 2024 – Jan 1 2026</span>', 4),
+            T('SHA-1 collision attacks demonstrated since 2017 (SHAttered). SHA-1 certificates rejected by all major browsers.', 2, 'warn'),
+            T('TLS 1.3 (RFC 8446 §4.2.3) forbids SHA-1 in CertificateVerify — but the certificate itself may still use SHA-1 as the issuer signature.', 2, 'warn'),
+            T('Client MUST reject: weak signature algorithm (SHA-1) renders certificate untrustworthy', 2, 'warn'),
+        ];
+
+        const detailScenarioQUIC = [
+            T('QUIC / HTTP/3 Contrast (educational view)', 0, 'layer'),
+            T('▼ QUIC Initial Packet (client → server)', 0, 'layer'),
+            T('Header Form: <span class="ws-tree-value">Long Header (1)</span>', 1),
+            T('Packet Type: <span class="ws-tree-value">Initial (0)</span>', 1),
+            T('Version: <span class="ws-tree-value">QUIC v1 (0x00000001)</span>', 1),
+            T('▼ QUIC CRYPTO frame <span class="ws-tree-warn">← TLS 1.3 ClientHello transported inside QUIC CRYPTO frames, not TLS records</span>', 1, 'layer'),
+            T('Offset: <span class="ws-tree-value">0</span>', 2),
+            T('Length: <span class="ws-tree-value">512</span>', 2),
+            T('▼ TLS 1.3 ClientHello (inside CRYPTO frame)', 2, 'layer'),
+            T('Handshake Type: <span class="ws-tree-value">Client Hello (1)</span>', 3),
+            T('▼ Extension: quic_transport_parameters (57) <span class="ws-tree-warn">← QUIC-specific: no TCP equivalent</span>', 3, 'layer'),
+            T('max_idle_timeout: <span class="ws-tree-value">30000 ms</span>', 4),
+            T('initial_max_data: <span class="ws-tree-value">1048576</span>', 4),
+            T('Key difference: QUIC integrates TLS 1.3 handshake into QUIC CRYPTO frames — no separate TLS record layer. 0-RTT is native. Runs over UDP, not TCP.', 0, 'warn'),
+        ];
+
+        const detailScenarioTicketTheft = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Handshake Protocol: Server Hello', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span> <span class="ws-tree-warn">← legacy field</span>', 1),
+            T('▼ Handshake Protocol: Server Hello', 1, 'layer'),
+            T('Random: <span class="ws-tree-value">b7 3e f1 92 ... 5c 8a (32 bytes)</span>', 2),
+            T('Cipher Suite: <span class="ws-tree-value">TLS_AES_256_GCM_SHA384 (0x1302)</span>', 2),
+            T('▼ Extension: pre_shared_key (41) <span class="ws-tree-warn">← server accepted a PSK</span>', 2, 'layer'),
+            T('Selected Identity: <span class="ws-tree-value">0</span>', 3),
+            T('⚠ This session ticket was stolen from the client (e.g. XSS, malware, or server-side breach)', 2, 'warn'),
+            T('Attacker replayed stolen ticket — server accepted it, establishing a session as the victim', 2, 'warn'),
+            T('TLS 1.3 session tickets are bearer tokens: whoever holds the ticket can resume the session', 2, 'warn'),
+            T('Mitigations: short ticket lifetimes, binding tickets to client IP or certificate, using anti-replay mechanisms', 0, 'warn'),
+        ];
+
+        const detailScenarioRecordTamper = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Application Data', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span>', 1),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span> <span class="ws-tree-warn">← legacy compat field</span>', 1),
+            T('Length: <span class="ws-tree-value">1024</span>', 1),
+            T('Encrypted payload + AEAD authentication tag:', 1, 'layer'),
+            T('Received authentication tag: <span class="ws-tree-value">de ad be ef 00 11 22 33 44 55 66 77 88 99 aa bb</span>', 2, 'warn'),
+            T('Computed authentication tag: <span class="ws-tree-value">a1 b2 c3 d4 e5 f6 07 18 29 3a 4b 5c 6d 7e 8f 90</span>', 2, 'warn'),
+            T('Authentication tag mismatch ❌ — record has been tampered with', 2, 'warn'),
+            T('AEAD decryption failed: AES-256-GCM integrity check failed (RFC 5116 §2.1)', 1, 'warn'),
+            T('Client MUST abort with bad_record_mac alert (RFC 8446 §6.2)', 0, 'warn'),
+            T('This is exactly what AEAD ciphers prevent: any bit flip in transit is detected before decryption', 0, 'warn'),
+        ];
+
+        const detailScenarioClientAuthFail = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Application Data (encrypted)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
+            T('▼ TLS Handshake (decrypted): Certificate + CertificateVerify + Finished', 1, 'layer'),
+            T('▼ Certificate (client → server) <span class="ws-tree-warn">← server sent CertificateRequest in step 3</span>', 2, 'layer'),
+            T('certificate_list: <span class="ws-tree-value">(empty)</span> <span class="ws-tree-warn">← client has no certificate to present</span>', 3, 'warn'),
+            T('CertificateRequest was issued — client MUST respond. Sending empty Certificate is allowed but server may reject.', 3, 'warn'),
+            T('▼ Server Alert (after client Certificate)', 2, 'layer'),
+            T('Alert Level: <span class="ws-tree-value">fatal (2)</span>', 3, 'warn'),
+            T('Alert Description: <span class="ws-tree-value">certificate_required (116)</span> <span class="ws-tree-warn">← RFC 8446 §6.2: server requires a client certificate</span>', 3, 'warn'),
+            T('Client authentication failed: server required a certificate but client sent an empty Certificate message', 0, 'warn'),
+        ];
+
+        const detailScenarioECH = [
+            T('Transport Layer Security', 0, 'layer'),
+            T('▼ TLSv1.3 Record Layer: Handshake Protocol: Client Hello (outer)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
+            T('▼ Handshake Protocol: Client Hello (outer/public)', 1, 'layer'),
+            T('SNI: <span class="ws-tree-value">public.example.com</span> <span class="ws-tree-warn">← outer ClientHello uses a public cover domain, not the actual target</span>', 2),
+            T('▼ Extension: encrypted_client_hello (0xfe0d) <span class="ws-tree-warn">← RFC 9258: encrypts the inner ClientHello</span>', 2, 'layer'),
+            T('ECHClientHello type: <span class="ws-tree-value">outer (0)</span>', 3),
+            T('cipher_suite: <span class="ws-tree-value">HKDF-SHA256, AES-128-GCM</span>', 3),
+            T('config_id: <span class="ws-tree-value">0x42</span> <span class="ws-tree-warn">← matches ECHConfig published in DNS HTTPS record</span>', 3),
+            T('enc: <span class="ws-tree-value">a3 b4 c5 d6 ... (32 bytes ECDH ephemeral key)</span>', 3),
+            T('payload: <span class="ws-tree-value">[encrypted inner ClientHello with real SNI example.com]</span>', 3),
+            T('Result: on-path observer sees "public.example.com" but the real target "example.com" is encrypted', 1, 'warn'),
+            T('Requires: server publishes ECHConfig in DNS HTTPS RR; client retrieves via encrypted DNS (DoH/DoT)', 0, 'warn'),
+        ];
+
+        const detailScenarioHSTS = [
+            T('Hypertext Transfer Protocol 2', 0, 'layer'),
+            T('▼ HTTP/2 200 OK Response', 1, 'layer'),
+            T('▼ HEADERS frame (stream 1)', 2, 'layer'),
+            T(':status: <span class="ws-tree-value">200</span>', 3),
+            T('content-type: <span class="ws-tree-value">text/html; charset=utf-8</span>', 3),
+            T('Strict-Transport-Security: <span class="ws-tree-value">max-age=31536000; includeSubDomains; preload</span> <span class="ws-tree-warn">← RFC 6797 HSTS header</span>', 3, 'warn'),
+            T('max-age=31536000: <span class="ws-tree-value">browser will only connect via HTTPS for 365 days</span>', 4),
+            T('includeSubDomains: <span class="ws-tree-value">policy applies to all subdomains</span>', 4),
+            T('preload: <span class="ws-tree-value">eligible for browser preload list (hstspreload.org)</span>', 4),
+            T('HSTS prevents SSL-stripping attacks: browser upgrades future http:// requests to https:// before sending', 1, 'warn'),
+            T('First visit is still vulnerable — HSTS preloading eliminates the first-visit risk', 0, 'warn'),
+        ];
+
         // TLS 1.2 hex — record version 0x0303, RSA premaster in packet 3
         const hexDowngrade = [
             [H('0000','16 03 01 01 00 01 00 00 fc 03 03 7f 3a 9b 2c 00','........|.:.,.'),H('0010','d4 e1 8a 6f 29 73 b5 17 42 8c a0 3e 55 f8 91 c2','...o)s..B..>U...'),H('0020','00 00 06 00 35 00 9c 00 9d 01 00 00 00 00 00 00','....5...........'),],
@@ -1053,7 +1302,8 @@
 
         function updatePacketList() {
             const sc = getScenario();
-            const data = sc.logjam     ? packetInfoLogjam
+            const data = sc.hrr        ? packetInfoHRR
+                       : sc.logjam     ? packetInfoLogjam
                        : sc.noFs       ? packetInfoDowngrade
                        : state.keysLoaded ? packetInfoDecrypted
                        :                   packetInfoEncrypted;
@@ -1077,7 +1327,7 @@
             const sc = getScenario();
             const idx = state.selectedRow;
             const isDowngrade = sc.noFs;
-            const s = sc.logjam ? stepsLogjam[idx] : (isDowngrade ? stepsDowngrade[idx] : steps[idx]);
+            const s = sc.hrr ? stepsHRR[idx] : sc.logjam ? stepsLogjam[idx] : (isDowngrade ? stepsDowngrade[idx] : steps[idx]);
 
             // Update row selection — reveal rows up to current step
             rows.forEach((row, i) => {
@@ -1086,8 +1336,8 @@
             });
 
             // Wizard step labels + property chips
-            const wLabels = isDowngrade ? wizardLabelsTLS12 : wizardLabelsTLS13;
-            const allSteps = sc.logjam ? stepsLogjam : (isDowngrade ? stepsDowngrade : steps);
+            const wLabels = sc.hrr ? wizardLabelsHRR : isDowngrade ? wizardLabelsTLS12 : wizardLabelsTLS13;
+            const allSteps = sc.hrr ? stepsHRR : sc.logjam ? stepsLogjam : (isDowngrade ? stepsDowngrade : steps);
             wizardSteps.forEach((ws, i) => {
                 ws.classList.toggle('active', i === idx);
                 ws.querySelector('.ws-label').textContent = wLabels[i];
@@ -1116,7 +1366,7 @@
             els.arrowLabel.className = 'arrow-label dir-' + s.arrowDir;
 
             // Attacker node — shown for any scenario involving an active on-path attacker
-            const mitmVisible = sc.mitm || sc.freak || sc.renego;
+            const mitmVisible = sc.mitm || sc.freak || sc.logjam || sc.renego;
             els.mitmAttacker.style.display = mitmVisible ? '' : 'none';
             els.arrowAreaRight.style.display = mitmVisible ? '' : 'none';
             if (mitmVisible) {
@@ -1151,6 +1401,18 @@
                 if (sc.sni        && idx === 0) detailNodes = detailScenarioSNI;
                 if (sc.mtls       && idx === 3) detailNodes = detailScenarioMTLS;
                 if (sc.zeroRtt    && idx === 4) detailNodes = detailScenarioZeroRtt;
+                // New scenario overlays
+                if (sc.alpn         && idx === 2) detailNodes = detailScenarioALPN;
+                if (sc.hrr          && idx === 1) detailNodes = detailScenarioHRR;
+                if (sc.ocsp         && idx === 2) detailNodes = detailScenarioOCSP;
+                if (sc.hostnameMismatch && idx === 2) detailNodes = detailScenarioHostname;
+                if (sc.weakSig      && idx === 2) detailNodes = detailScenarioWeakSig;
+                if (sc.quic         && idx === 0) detailNodes = detailScenarioQUIC;
+                if (sc.ticketTheft  && idx === 1) detailNodes = detailScenarioTicketTheft;
+                if (sc.recordTamper && idx === 4) detailNodes = detailScenarioRecordTamper;
+                if (sc.clientAuthFail && idx === 3) detailNodes = detailScenarioClientAuthFail;
+                if (sc.ech          && idx === 0) detailNodes = detailScenarioECH;
+                if (sc.hsts         && idx === 4) detailNodes = detailScenarioHSTS;
             }
 
             els.wsDetail.innerHTML = detailNodes.map(n => {
@@ -1255,16 +1517,88 @@
                     els.warningMessage.classList.add('visible');
                 }
 
+                // ALPN mismatch — fires at step 3 (EncryptedExtensions)
+                if (step === 3 && sc.alpn) {
+                    els.warningMessage.textContent = 'ALPN mismatch: the server could not negotiate a common application protocol. The server returned no_application_protocol in EncryptedExtensions (RFC 7301 §3.3). TLS handshake succeeds but HTTP/2 is not available — the application must fall back to HTTP/1.1 or abort at the application layer.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // HelloRetryRequest — fires at step 2
+                if (step === 2 && sc.hrr) {
+                    els.warningMessage.textContent = 'HelloRetryRequest: the server does not support the key_share group offered by the client (x25519). The server sends a HelloRetryRequest — structurally a ServerHello with magic random CF21AD74... (SHA-256("HelloRetryRequest")). The client must retry with the requested group (secp256r1), adding one extra round trip. RFC 8446 §4.1.4.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // OCSP revoked — fires at step 3 (Certificate), halts
+                if (step === certStep && sc.ocsp) {
+                    els.failureMessage.textContent = 'Handshake failed: the OCSP staple included in the server\'s Certificate message indicates the certificate has been revoked (revocationReason: keyCompromise). Client aborts — RFC 6960 §3.2 requires that clients treat a revoked status as a hard failure.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // Hostname mismatch — fires at step 3 (Certificate), halts
+                if (step === certStep && sc.hostnameMismatch) {
+                    els.failureMessage.textContent = 'Handshake failed: hostname mismatch. The server certificate is issued for "other.example.com" but the client requested "example.com" (via SNI). Neither the Subject CN nor any Subject Alternative Name (SAN) matches. Client aborts — RFC 2818 §3.1.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // Weak signature algorithm (SHA-1) — fires at step 3 (Certificate), halts
+                if (step === certStep && sc.weakSig) {
+                    els.failureMessage.textContent = 'Handshake failed: weak signature algorithm. The server certificate uses SHA-1WithRSAEncryption — SHA-1 has been cryptographically broken since the SHAttered attack (2017). All major browsers reject SHA-1 certificates. TLS 1.3 also forbids SHA-1 in CertificateVerify (RFC 8446 §4.2.3). Client aborts.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // QUIC / HTTP/3 — fires at step 1 (ClientHello)
+                if (step === 1 && sc.quic) {
+                    els.warningMessage.textContent = 'QUIC / HTTP/3 contrast: in standard TLS 1.3 over TCP, the ClientHello is sent inside a TLS record. In QUIC (RFC 9000), the TLS 1.3 handshake is transported inside QUIC CRYPTO frames instead — there is no separate TLS record layer. QUIC runs over UDP, integrates 0-RTT natively, and eliminates TCP head-of-line blocking. This trace shows the TCP-based TLS 1.3 flow for comparison.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // Session ticket theft — fires at step 2 (ServerHello)
+                if (step === 2 && sc.ticketTheft) {
+                    els.warningMessage.textContent = 'Session ticket theft: an attacker stole the client\'s TLS 1.3 session ticket (via XSS, malware, or server-side breach) and replayed it. The server accepted the stolen ticket and established a session with the attacker as the victim. TLS session tickets are bearer tokens — whoever holds them can resume. Mitigations: short ticket lifetimes, binding to client certificate or IP, server-side anti-replay cache.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // Record tampering — fires at step 5 (App Data), halts
+                if (step === 5 && sc.recordTamper) {
+                    els.failureMessage.textContent = 'Handshake failed: AEAD authentication tag mismatch. An attacker tampered with an application data record in transit. AES-256-GCM detected the modification via its 16-byte authentication tag — the computed tag does not match the received tag. Client sends bad_record_mac alert and aborts (RFC 8446 §6.2). This demonstrates AEAD integrity protection working as intended.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // Client authentication failure — fires at step 4 (Client Finished), halts
+                if (step === 4 && sc.clientAuthFail) {
+                    els.failureMessage.textContent = 'Handshake failed: client authentication failure. The server sent a CertificateRequest during the encrypted handshake flight (step 3) requiring a client certificate. The client sent an empty Certificate message (no client certificate available). The server responded with a certificate_required (116) fatal alert and aborted — RFC 8446 §4.3.2.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // ECH success — fires at step 1 (ClientHello)
+                if (step === 1 && sc.ech) {
+                    els.warningMessage.textContent = 'Encrypted Client Hello (ECH, RFC 9258): the real ClientHello (inner) is encrypted using the server\'s public key published in DNS HTTPS records. The outer ClientHello uses a public cover domain. On-path observers see the cover domain SNI, not the actual target. Requires encrypted DNS (DoH/DoT) to prevent DNS-based SNI leakage. ECH + ESNI together close the SNI privacy gap.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // HSTS — fires at step 6 (Complete)
+                if (step === 6 && sc.hsts) {
+                    els.warningMessage.textContent = 'HSTS (HTTP Strict Transport Security, RFC 6797): the server\'s HTTP response includes Strict-Transport-Security: max-age=31536000; includeSubDomains; preload. For the next 365 days the browser will automatically upgrade all http:// requests to https://, preventing SSL-stripping attacks. The preload directive makes the domain eligible for browser preload lists, eliminating first-visit vulnerability.';
+                    els.warningMessage.classList.add('visible');
+                }
+
             }
 
             // Disable next if halted or at end
             els.nextStep.disabled = state.halted || step >= 6;
 
             // Correct pillar state for failure scenarios
-            if (state.halted) {
+            if (state.halted && !sc.recordTamper) {
                 // Cert failure (expired, MITM, pinning): authentication was not established.
                 // In TLS 1.3 the cert flight is sent encrypted (encryption WAS in use — keep it).
                 // In TLS 1.2 downgrade encryption is not yet active at the cert step (no-op).
+                // Record tamper halts at step 5 — auth was already established at step 3, keep it.
                 pillars.authentication.classList.remove('active');
             }
 
