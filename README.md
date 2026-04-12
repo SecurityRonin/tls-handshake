@@ -13,8 +13,8 @@ Every HTTPS connection starts with a handshake. This demo walks through the TLS 
 1. **ClientHello** — Key Exchange begins (ECDHE key share sent)
 2. **ServerHello** — Key exchange complete; handshake traffic keys derived. Authentication not yet established.
 3. **Certificate** — Server authenticates: encrypted Certificate + CertificateVerify flight verified. Encryption already active.
-4. **Client Finished** — Both sides derive complementary client/server application traffic secrets via HKDF (not one shared key)
-5. **Encrypted Data** — Integrity (AEAD-authenticated records flow; auth tag is integral to the cipher, not a separate HMAC)
+4. **Client Finished** — Integrity established: Finished authenticates the handshake transcript; both sides derive complementary client/server application traffic secrets via HKDF
+5. **Encrypted Data** — AEAD-authenticated application records flow (auth tag is integral to the cipher, not a separate HMAC)
 6. **Done** — All four pillars active. Connection secure.
 
 ## What-If Scenarios
@@ -40,7 +40,7 @@ Toggle scenarios to see how the handshake changes or breaks:
 | **TLS 1.2 downgrade (RSA)** | Full downgrade — RSA key exchange, no forward secrecy |
 | **TLS 1.2 + CBC cipher** | Warning from step 3 — Lucky13/POODLE exploit CBC padding oracles; BEAST exploits predictable TLS 1.0 CBC IVs (chosen-plaintext, not a padding oracle) |
 | **TLS 1.2 + expired certificate** | Step 2 fails — certificate validity check |
-| **Export Cipher Downgrade (FREAK/Logjam)** | Step 2 — TLS 1.2 server silently accepts export-grade RSA/DHE key exchange; attack succeeds with no client alert |
+| **Export RSA Downgrade (FREAK-style)** | Step 2 — illustrative TLS 1.2 server silently accepts an export-grade RSA suite; downgrade succeeds with no client alert |
 | **Renegotiation Injection** | Step 5 — pre-RFC 5746 TLS 1.2 allows attacker prefix injection via unauthenticated renegotiation |
 
 ## Development
