@@ -633,3 +633,392 @@ test.describe('Scenario Protocol Trees', () => {
         await expect(page.locator('#ws-detail')).toContainText('ATTACKER');
     });
 });
+
+test.describe('What-If Scenarios — New', () => {
+    // ── 1. ALPN Mismatch ──────────────────────────────────────────────────────
+    test('ALPN: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-alpn')).toBeVisible();
+    });
+
+    test('ALPN: warning at step 3 containing ALPN', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 3');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('ALPN');
+    });
+
+    test('ALPN: next step is NOT disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('ALPN: handshake completes (step 6 reachable)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+    });
+
+    // ── 2. HelloRetryRequest ──────────────────────────────────────────────────
+    test('HRR: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-hrr')).toBeVisible();
+    });
+
+    test('HRR: step 2 warning contains HelloRetryRequest', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hrr');
+        await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 2');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('HelloRetryRequest');
+    });
+
+    test('HRR: packet 2 info shows Hello Retry Request', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hrr');
+        await page.click('#next-step');
+        await expect(page.locator('.ws-packet-row:nth-child(2) .ws-info')).toContainText('Hello Retry Request');
+    });
+
+    test('HRR: handshake completes (step 6 reachable)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hrr');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+        await expect(page.locator('#connection-status')).toBeVisible();
+    });
+
+    test('HRR: next step is NOT disabled after step 2', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hrr');
+        await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    // ── 3. OCSP / Revoked Certificate ─────────────────────────────────────────
+    test('OCSP: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-ocsp')).toBeVisible();
+    });
+
+    test('OCSP: failure at step 3 containing "revoked"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ocsp');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 3');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText('revoked');
+    });
+
+    test('OCSP: next step is disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ocsp');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('OCSP: auth pillar not active after halt', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ocsp');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
+    });
+
+    // ── 4. Hostname Mismatch ──────────────────────────────────────────────────
+    test('hostname: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-hostname')).toBeVisible();
+    });
+
+    test('hostname: failure at step 3 containing "hostname" or "mismatch"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hostname');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 3');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText(/hostname|mismatch/i);
+    });
+
+    test('hostname: next step is disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hostname');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('hostname: auth pillar not active after halt', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hostname');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
+    });
+
+    // ── 5. Weak Signature Algorithm ───────────────────────────────────────────
+    test('weak-sig: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-weak-sig')).toBeVisible();
+    });
+
+    test('weak-sig: failure at step 3 containing "SHA-1" or "weak"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-weak-sig');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 3');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText(/SHA-1|weak/i);
+    });
+
+    test('weak-sig: next step is disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-weak-sig');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('weak-sig: auth pillar not active after halt', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-weak-sig');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
+    });
+
+    // ── 6. QUIC / HTTP/3 ──────────────────────────────────────────────────────
+    test('QUIC: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-quic')).toBeVisible();
+    });
+
+    test('QUIC: info/warning at step 1 containing "QUIC"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#step-indicator')).toContainText('Step 1');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('QUIC');
+    });
+
+    test('QUIC: next step is NOT disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('QUIC: handshake completes (step 6 reachable)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+    });
+
+    // ── 7. Session Ticket Theft ───────────────────────────────────────────────
+    test('ticket-theft: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-ticket-theft')).toBeVisible();
+    });
+
+    test('ticket-theft: warning at step 2 containing "ticket"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ticket-theft');
+        await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 2');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText(/ticket/i);
+    });
+
+    test('ticket-theft: next step is NOT disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ticket-theft');
+        await page.click('#next-step');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('ticket-theft: handshake completes (step 6 reachable)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ticket-theft');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+    });
+
+    // ── 8. Record Tampering ───────────────────────────────────────────────────
+    test('record-tamper: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-record-tamper')).toBeVisible();
+    });
+
+    test('record-tamper: failure at step 5 containing "AEAD" or "tamper"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-record-tamper');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 5');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText(/AEAD|tamper/i);
+    });
+
+    test('record-tamper: next step is disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-record-tamper');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('record-tamper: auth pillar remains active (auth established before tamper)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-record-tamper');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).toHaveClass(/active/);
+    });
+
+    // ── 9. Client Authentication Failure ─────────────────────────────────────
+    test('client-auth-fail: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-client-auth-fail')).toBeVisible();
+    });
+
+    test('client-auth-fail: failure at step 4 containing "client" and "certificate"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-client-auth-fail');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 4');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText(/client/i);
+        await expect(page.locator('#failure-message')).toContainText(/certificate/i);
+    });
+
+    test('client-auth-fail: next step is disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-client-auth-fail');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    // ── 10. ECH Success ───────────────────────────────────────────────────────
+    test('ECH: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-ech')).toBeVisible();
+    });
+
+    test('ECH: info/warning at step 1 containing "ECH" or "Encrypted Client Hello"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ech');
+        await expect(page.locator('#step-indicator')).toContainText('Step 1');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText(/ECH|Encrypted Client Hello/i);
+    });
+
+    test('ECH: next step is NOT disabled', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ech');
+        await expect(page.locator('#next-step')).not.toBeDisabled();
+    });
+
+    test('ECH: handshake completes (step 6 reachable)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ech');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+    });
+
+    // ── 11. HSTS ──────────────────────────────────────────────────────────────
+    test('HSTS: radio exists', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#scenario-hsts')).toBeVisible();
+    });
+
+    test('HSTS: warning at step 6 containing "HSTS"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hsts');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+        await expect(page.locator('#warning-message')).toBeVisible();
+        await expect(page.locator('#warning-message')).toContainText('HSTS');
+    });
+
+    test('HSTS: step 6 is last step (next-step disabled)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hsts');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+});
+
+test.describe('Scenario Protocol Trees — New', () => {
+    test('ALPN: step 3 protocol tree shows no_application_protocol', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('no_application_protocol');
+    });
+
+    test('HRR: step 2 protocol tree shows HelloRetryRequest', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hrr');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('HelloRetryRequest');
+    });
+
+    test('OCSP: step 3 protocol tree shows revoked', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ocsp');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('revoked');
+    });
+
+    test('hostname: step 3 protocol tree shows mismatch', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hostname');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('mismatch');
+    });
+
+    test('weak-sig: step 3 protocol tree shows SHA-1', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-weak-sig');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('SHA-1');
+    });
+
+    test('QUIC: step 1 protocol tree shows QUIC CRYPTO', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#ws-detail')).toContainText('QUIC CRYPTO');
+    });
+
+    test('ticket-theft: step 2 protocol tree shows stolen', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ticket-theft');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('stolen');
+    });
+
+    test('record-tamper: step 5 protocol tree shows authentication tag', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-record-tamper');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('authentication tag');
+    });
+
+    test('client-auth-fail: step 4 protocol tree shows CertificateRequest', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-client-auth-fail');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('CertificateRequest');
+    });
+
+    test('ECH: step 1 protocol tree shows encrypted_client_hello', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ech');
+        await expect(page.locator('#ws-detail')).toContainText('encrypted_client_hello');
+    });
+
+    test('HSTS: step 5 protocol tree shows Strict-Transport-Security', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-hsts');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('Strict-Transport-Security');
+    });
+});
