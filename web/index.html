@@ -272,7 +272,7 @@
     <!-- Wireshark Toolbar -->
     <div class="ws-toolbar">
         <span class="title">&#x1F988; Packet Capture</span>
-        <button id="load-keys">Load SSLKEYLOGFILE...</button>
+        <button id="load-keys">Load SSLKEYLOGFILE… (simulated)</button>
     </div>
 
     <!-- Wireshark Packet List -->
@@ -620,7 +620,7 @@
             { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.', arrowDir: 'right', arrowText: 'Cipher suites, ECDHE key share, nonce', activePillars: ['keyExchange'] },
             { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite and its ECDHE key share. Both sides now derive handshake traffic keys via HKDF. Authentication is NOT yet established — the certificate has not been sent or verified.', arrowDir: 'left', arrowText: 'Selected suite, server key share', activePillars: ['keyExchange'] },
             { label: 'Step 3', title: 'Certificate', desc: 'Server sends EncryptedExtensions + Certificate + CertificateVerify + Finished, all encrypted under handshake traffic keys. Client verifies the chain locally (Leaf → Intermediate → Root trust anchor). Authentication is now established.', arrowDir: 'left', arrowText: 'Certificate, CertificateVerify, Finished (encrypted)', activePillars: ['keyExchange', 'authentication', 'encryption'], showCertChain: true },
-            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message (HMAC over the full handshake transcript). Both sides switch to application traffic keys derived via HKDF from the ECDHE shared secret.', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption'] },
+            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message — an HMAC over the entire handshake transcript, proving transcript integrity. Both sides derive complementary client/server application traffic secrets via HKDF (not one shared key).', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
             { label: 'Step 5', title: 'Encrypted Data', desc: 'Application data flows encrypted with AEAD (AES-256-GCM). Each record carries a 16-byte authentication tag — integral to the AEAD cipher, not a separate HMAC.', arrowDir: 'right', arrowText: 'Encrypted records + AEAD auth tags', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
             { label: 'Step 6', title: 'Handshake Complete', desc: 'All four pillars are satisfied. The TLS 1.3 connection is fully established.', arrowDir: 'right', arrowText: 'Secure channel established', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: true },
         ];
@@ -847,19 +847,25 @@
 
             if (step === 2 && toggles.cbc.checked && !toggles.noFs.checked) {
                 // TLS 1.3 rejects CBC at ServerHello — negotiation fails immediately
-                els.failureMessage.textContent = 'Handshake failed at ServerHello: TLS 1.3 does not support CBC cipher suites. The server found no acceptable AEAD cipher in the ClientHello and aborted. Only AES-GCM and ChaCha20-Poly1305 are permitted in TLS 1.3.';
+                els.failureMessage.textContent = 'Handshake failed at ServerHello: TLS 1.3 does not support CBC cipher suites. The server found no acceptable AEAD cipher in the ClientHello and aborted. TLS 1.3 permits only AEAD suites (AES-GCM, AES-CCM, ChaCha20-Poly1305); CBC is not permitted.';
                 els.failureMessage.classList.add('visible');
                 state.halted = true;
             }
 
             if (step >= 3 && toggles.cbc.checked && toggles.noFs.checked) {
                 // TLS 1.2 + CBC — cipher is now active, warn about its weaknesses
-                els.warningMessage.textContent = 'TLS 1.2 + CBC active: vulnerable to padding oracle attacks (Lucky13, BEAST) and timing side-channels. POODLE targets SSLv3 CBC specifically. TLS 1.3 eliminates CBC entirely — only AEAD ciphers are permitted.';
+                els.warningMessage.textContent = 'TLS 1.2 + CBC active: Lucky13 exploits a timing side-channel in CBC MAC-then-encrypt; POODLE targets SSLv3 CBC padding. BEAST exploits predictable TLS 1.0 CBC IVs — not a padding oracle. TLS 1.3 eliminates CBC entirely — only AEAD ciphers are permitted.';
                 els.warningMessage.classList.add('visible');
             }
 
             // Disable next if halted or at end
             els.nextStep.disabled = state.halted || step >= 6;
+
+            // If halted, cert validation failed — authentication and encryption were not established
+            if (state.halted) {
+                pillars.authentication.classList.remove('active');
+                pillars.encryption.classList.remove('active');
+            }
 
             // Lock toggles once handshake has started; unlock only at step 1
             const locked = idx > 0;
@@ -907,7 +913,7 @@
             toggles.mitm.checked = false;
             toggles.noFs.checked = false;
             toggles.cbc.checked = false;
-            els.loadKeys.textContent = 'Load SSLKEYLOGFILE...';
+            els.loadKeys.textContent = 'Load SSLKEYLOGFILE… (simulated)';
             els.decryptCallout.classList.remove('visible');
             render();
         });

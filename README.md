@@ -43,7 +43,7 @@ python3 -m http.server 3009 --directory web
 npm test
 ```
 
-27 Playwright E2E tests covering security headers, happy path, failure toggles, and reset.
+45 Playwright E2E tests covering security headers, happy path, failure toggles, and reset.
 
 ## Tech Stack
 
