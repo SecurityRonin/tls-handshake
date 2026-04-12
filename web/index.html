@@ -759,12 +759,12 @@
         // Scenario-specific protocol tree overlays (TLS 1.3 path only — flat arrays for one step)
         const detailScenarioFREAK = [
             T('Transport Layer Security', 0, 'layer'),
-            T('▼ TLSv1.3 Record Layer: Handshake Protocol: Server Hello', 0, 'layer'),
+            T('▼ TLSv1.2 Record Layer: Handshake Protocol: Server Hello', 0, 'layer'),
             T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
-            T('Version: <span class="ws-tree-value">TLS 1.0 (0x0301)</span> <span class="ws-tree-warn">← downgraded by MITM</span>', 1),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span> <span class="ws-tree-warn">← FREAK targets TLS 1.2 and earlier, not TLS 1.3</span>', 1),
             T('▼ Handshake Protocol: Server Hello', 1, 'layer'),
             T('Handshake Type: <span class="ws-tree-value">Server Hello (2)</span>', 2),
-            T('Version: <span class="ws-tree-value">TLS 1.0 (0x0301)</span>', 2),
+            T('Version: <span class="ws-tree-value">TLS 1.2 (0x0303)</span>', 2),
             T('Random: <span class="ws-tree-value">f0 e1 d2 c3 ... b4 a5 (32 bytes)</span>', 2),
             T('Cipher Suite: <span class="ws-tree-value">TLS_RSA_EXPORT_WITH_RC4_40_MD5 (0x0003)</span> <span class="ws-tree-warn">← export-grade ❌</span>', 2, 'warn'),
             T('40-bit RC4 key — factorable in hours on modern hardware', 3, 'warn'),
@@ -892,8 +892,8 @@
 
         const detailScenarioZeroRtt = [
             T('Transport Layer Security', 0, 'layer'),
-            T('▼ TLSv1.3 Record Layer: Early Data (0-RTT)', 0, 'layer'),
-            T('Content Type: <span class="ws-tree-value">Application Data (23)</span>', 1),
+            T('▼ TLSv1.3 Record Layer: Application Data (0-RTT Early Data)', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← same content type as 1-RTT; no distinct "Early Data" type exists on the wire</span>', 1),
             T('⚠ Early Data — sent BEFORE server Finished received', 1, 'warn'),
             T('No forward secrecy for this record: encrypted under resumption key', 1, 'warn'),
             T('Replay risk: server has no proof this is a fresh request (RFC 8446 §8)', 1, 'warn'),
@@ -909,16 +909,16 @@
 
         const detailScenarioRenego = [
             T('Transport Layer Security', 0, 'layer'),
-            T('▼ TLSv1.3 Record Layer: Application Data', 0, 'layer'),
+            T('▼ TLSv1.2 Record Layer: Application Data <span class="ws-tree-warn">← renegotiation is a TLS 1.2 and earlier vulnerability; TLS 1.3 forbids it (RFC 8446 §4.6.3)</span>', 0, 'layer'),
             T('Content Type: <span class="ws-tree-value">Application Data (23)</span>', 1),
             T('▼ HTTP/1.1 Request (decrypted) — ATTACKER-INJECTED PREFIX', 1, 'layer'),
             T('GET /admin HTTP/1.1 <span class="ws-tree-warn">← injected by attacker before victim connection</span>', 2, 'warn'),
             T('Host: example.com', 2, 'warn'),
-            T('▼ TLSv1.3 Record Layer: Handshake Protocol: Client Hello <span class="ws-tree-warn">← renegotiation trigger</span>', 1, 'layer'),
+            T('▼ TLSv1.2 Record Layer: Handshake Protocol: Client Hello <span class="ws-tree-warn">← renegotiation trigger (impossible in TLS 1.3)</span>', 1, 'layer'),
             T('Handshake Type: <span class="ws-tree-value">Client Hello (1)</span>', 2),
-            T('No renegotiation_info extension (RFC 5746) <span class="ws-tree-warn">← pre-fix TLS</span>', 3, 'warn'),
+            T('No renegotiation_info extension (RFC 5746) <span class="ws-tree-warn">← pre-fix TLS 1.2</span>', 3, 'warn'),
             T('Server concatenates attacker prefix + victim request as single authenticated stream ❌', 2, 'warn'),
-            T('▼ TLSv1.3 Record Layer: Application Data', 1, 'layer'),
+            T('▼ TLSv1.2 Record Layer: Application Data', 1, 'layer'),
             T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← victim\'s legitimate request follows</span>', 2),
             T('GET /transfer?amount=1000 HTTP/1.1', 2),
             T('Fix: RFC 5746 Renegotiation Indication extension (TLS_EMPTY_RENEGOTIATION_INFO_SCSV) or disable renegotiation', 0, 'warn'),
