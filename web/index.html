@@ -383,6 +383,34 @@
                 <input type="checkbox" id="toggle-cbc">
                 <label for="toggle-cbc">CBC cipher suite (pair with TLS 1.2 downgrade)</label>
             </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-cert-pin">
+                <label for="toggle-cert-pin">Certificate pinning failure</label>
+            </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-freak">
+                <label for="toggle-freak">Export cipher downgrade (FREAK/Logjam)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-mtls">
+                <label for="toggle-mtls">Mutual TLS (client certificate)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-psk">
+                <label for="toggle-psk">PSK session resumption (no full handshake)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-renego">
+                <label for="toggle-renego">Renegotiation injection attack</label>
+            </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-sni">
+                <label for="toggle-sni">SNI exposed (no Encrypted Client Hello)</label>
+            </div>
+            <div class="toggle-row">
+                <input type="checkbox" id="toggle-zero-rtt">
+                <label for="toggle-zero-rtt">0-RTT Early Data (replay risk)</label>
+            </div>
         </div>
 
     </div><!-- /.right-panel -->
@@ -415,10 +443,17 @@
         };
 
         const toggles = {
-            expiredCert: document.getElementById('toggle-expired-cert'),
-            mitm: document.getElementById('toggle-mitm'),
-            noFs: document.getElementById('toggle-no-fs'),
             cbc: document.getElementById('toggle-cbc'),
+            certPin: document.getElementById('toggle-cert-pin'),
+            expiredCert: document.getElementById('toggle-expired-cert'),
+            freak: document.getElementById('toggle-freak'),
+            mitm: document.getElementById('toggle-mitm'),
+            mtls: document.getElementById('toggle-mtls'),
+            noFs: document.getElementById('toggle-no-fs'),
+            psk: document.getElementById('toggle-psk'),
+            renego: document.getElementById('toggle-renego'),
+            sni: document.getElementById('toggle-sni'),
+            zeroRtt: document.getElementById('toggle-zero-rtt'),
         };
 
         const rows = document.querySelectorAll('.ws-packet-row');
@@ -852,16 +887,64 @@
                 els.warningMessage.classList.add('visible');
             }
 
+            // Extended what-if scenarios — TLS 1.3 path only
+            if (!toggles.noFs.checked) {
+                // SNI leakage — fires at step 1 (ClientHello)
+                if (step === 1 && toggles.sni.checked) {
+                    els.warningMessage.textContent = "SNI leakage: the server name 'example.com' is sent in plaintext in the ClientHello extension — visible to any on-path observer before encryption begins. Encrypted Client Hello (ECH, RFC 9258) encrypts the inner ClientHello using the server's public key published in DNS HTTPS records.";
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // PSK session resumption — fires at step 2 (ServerHello)
+                if (step === 2 && toggles.psk.checked) {
+                    els.warningMessage.textContent = 'PSK resumption: the server accepted a pre-shared key from a previous session ticket. The ECDHE key share is still used (PSK+DHE), so forward secrecy is preserved. Without DHE (PSK-only mode), forward secrecy is lost — a stolen ticket decrypts recorded traffic.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // FREAK/Logjam export cipher downgrade — fires at step 2 (ServerHello), halts
+                if (step === 2 && toggles.freak.checked) {
+                    els.failureMessage.textContent = 'Export cipher downgrade: a MITM stripped strong cipher suites from the ClientHello and the server negotiated an export-grade cipher (RSA-512 / DHE-512). These keys are factorable in hours. FREAK targets RSA export; Logjam targets DHE export. Fixed by removing export ciphers from server config and rejecting them client-side.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // Certificate pinning failure — fires at step 3 (Certificate), halts
+                if (step === certStep && toggles.certPin.checked) {
+                    els.failureMessage.textContent = "Certificate pinning failure: the server's SPKI hash does not match any pinned value in the application's trust store. Connection aborted — the certificate is valid but the app does not trust this CA or leaf. Used by mobile apps and zero-trust agents to defeat rogue CAs.";
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
+                }
+
+                // mTLS — fires at step 4 (Client Finished)
+                if (step === 4 && toggles.mtls.checked) {
+                    els.warningMessage.textContent = 'Mutual TLS: the server sent a CertificateRequest during the encrypted handshake flight (step 3). The client responds here with its own Certificate + CertificateVerify before Finished. Both endpoints are now mutually authenticated — used in zero-trust, API gateways, and service meshes.';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // 0-RTT Early Data — fires at step 5 (App Data)
+                if (step === 5 && toggles.zeroRtt.checked) {
+                    els.warningMessage.textContent = '0-RTT Early Data active: the client sent application data before receiving the server Finished — these bytes have no forward secrecy and are vulnerable to replay attacks. Servers must implement application-layer replay protection (RFC 8446 §8).';
+                    els.warningMessage.classList.add('visible');
+                }
+
+                // Renegotiation injection — fires at step 5 (App Data / Encrypted Data)
+                if (step === 5 && toggles.renego.checked) {
+                    els.warningMessage.textContent = 'Renegotiation injection: pre-RFC 5746 TLS allowed unauthenticated renegotiation. An attacker could inject a prefix request then trigger renegotiation — the server concatenates attacker and victim data as one authenticated stream. Fixed by the Renegotiation Indication extension (RFC 5746) and disabling renegotiation entirely in TLS 1.3.';
+                    els.warningMessage.classList.add('visible');
+                }
+            }
+
             // Disable next if halted or at end
             els.nextStep.disabled = state.halted || step >= 6;
 
             // Correct pillar state for failure scenarios
             if (state.halted) {
-                if (step === 2 && toggles.cbc.checked && !toggles.noFs.checked) {
+                if (step === 2 && (toggles.cbc.checked && !toggles.noFs.checked || toggles.freak.checked)) {
                     // TLS 1.3: server aborted at ServerHello — key exchange never completed
+                    // Also covers FREAK/Logjam: negotiation failed before keys were established
                     pillars.keyExchange.classList.remove('active');
                 } else {
-                    // Cert failure: authentication was not established.
+                    // Cert failure (expired, MITM, pinning): authentication was not established.
                     // In TLS 1.3 the cert flight is sent encrypted (encryption WAS in use — keep it).
                     // In TLS 1.2 downgrade encryption is not yet active at the cert step (no-op).
                     pillars.authentication.classList.remove('active');
@@ -910,10 +993,17 @@
             state.selectedRow = 0;
             state.keysLoaded = false;
             state.halted = false;
-            toggles.expiredCert.checked = false;
-            toggles.mitm.checked = false;
-            toggles.noFs.checked = false;
             toggles.cbc.checked = false;
+            toggles.certPin.checked = false;
+            toggles.expiredCert.checked = false;
+            toggles.freak.checked = false;
+            toggles.mitm.checked = false;
+            toggles.mtls.checked = false;
+            toggles.noFs.checked = false;
+            toggles.psk.checked = false;
+            toggles.renego.checked = false;
+            toggles.sni.checked = false;
+            toggles.zeroRtt.checked = false;
             els.loadKeys.textContent = 'Load SSLKEYLOGFILE… (simulated)';
             els.decryptCallout.classList.remove('visible');
             render();
