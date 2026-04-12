@@ -36,12 +36,12 @@
             background: #161b22;
             border: 1px solid #30363d;
             border-radius: 6px;
-            padding: 0.4rem 0.8rem;
+            padding: 0.4rem 0.6rem;
             font-size: 0.7rem;
             color: #8b949e;
             transition: all 0.3s ease;
             text-align: center;
-            min-width: 80px;
+            display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
         }
         .wizard-step.active {
             border-color: #58a6ff;
@@ -49,14 +49,15 @@
             background: #161b22;
             box-shadow: 0 0 8px rgba(88, 166, 255, 0.2);
         }
+        .ws-chips { display: flex; flex-wrap: wrap; gap: 0.2rem; justify-content: center; min-height: 1rem; }
+        .ws-chip { font-size: 0.55rem; padding: 0.1rem 0.35rem; border-radius: 8px; white-space: nowrap; }
+        .ws-chip-kx  { background: rgba(88,166,255,0.12); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
+        .ws-chip-enc { background: rgba(210,153,34,0.12);  color: #d29922; border: 1px solid rgba(210,153,34,0.3); }
+        .ws-chip-auth{ background: rgba(63,185,80,0.12);   color: #3fb950; border: 1px solid rgba(63,185,80,0.3);  }
+        .ws-chip-int { background: rgba(163,113,247,0.12); color: #a371f7; border: 1px solid rgba(163,113,247,0.3);}
 
-        /* Pillars */
-        .pillars { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; justify-content: center; }
-        .pillar {
-            background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-            padding: 0.6rem 1.2rem; font-size: 0.8rem; color: #8b949e; transition: all 0.3s ease;
-        }
-        .pillar.active { border-color: #238636; color: #3fb950; box-shadow: 0 0 12px rgba(63, 185, 80, 0.3); }
+        /* Pillars — hidden; JS still manipulates classes for failure logic */
+        .pillars { display: none; }
 
         /* Two-column layout */
         .main-layout { display: flex; gap: 1.5rem; width: 100%; max-width: 1300px; align-items: flex-start; }
@@ -238,12 +239,12 @@
 
     <!-- Wizard Journey Header -->
     <div class="wizard-header">
-        <div class="wizard-step active">1. ClientHello</div>
-        <div class="wizard-step">2. ServerHello</div>
-        <div class="wizard-step">3. Certificate</div>
-        <div class="wizard-step">4. Client Finished</div>
-        <div class="wizard-step">5. App Data</div>
-        <div class="wizard-step">6. Complete</div>
+        <div class="wizard-step active"><span class="ws-label">1. ClientHello</span><div class="ws-chips"></div></div>
+        <div class="wizard-step"><span class="ws-label">2. ServerHello</span><div class="ws-chips"></div></div>
+        <div class="wizard-step"><span class="ws-label">3. Certificate</span><div class="ws-chips"></div></div>
+        <div class="wizard-step"><span class="ws-label">4. Client Finished</span><div class="ws-chips"></div></div>
+        <div class="wizard-step"><span class="ws-label">5. App Data</span><div class="ws-chips"></div></div>
+        <div class="wizard-step"><span class="ws-label">6. Complete</span><div class="ws-chips"></div></div>
     </div>
 
     <!-- Pillar indicators -->
@@ -681,22 +682,22 @@
         ];
 
         const steps = [
-            { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.', arrowDir: 'right', arrowText: 'Cipher suites, ECDHE key share, nonce', activePillars: ['keyExchange'] },
-            { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite and its ECDHE key share. Both sides now derive handshake traffic keys via HKDF. Authentication is NOT yet established — the certificate has not been sent or verified.', arrowDir: 'left', arrowText: 'Selected suite, server key share', activePillars: ['keyExchange'] },
-            { label: 'Step 3', title: 'Certificate', desc: 'Server sends EncryptedExtensions + Certificate + CertificateVerify + Finished, all encrypted under handshake traffic keys. Client verifies the chain locally (Leaf → Intermediate → Root trust anchor). Authentication is now established.', arrowDir: 'left', arrowText: 'Certificate, CertificateVerify, Finished (encrypted)', activePillars: ['keyExchange', 'authentication', 'encryption'], showCertChain: true },
-            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message — an HMAC over the entire handshake transcript, proving transcript integrity. Both sides derive complementary client/server application traffic secrets via HKDF (not one shared key).', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
-            { label: 'Step 5', title: 'Encrypted Data', desc: 'Application data flows encrypted with AEAD (AES-256-GCM). Each record carries a 16-byte authentication tag — integral to the AEAD cipher, not a separate HMAC.', arrowDir: 'right', arrowText: 'Encrypted records + AEAD auth tags', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
-            { label: 'Step 6', title: 'Handshake Complete', desc: 'All four pillars are satisfied. The TLS 1.3 connection is fully established.', arrowDir: 'right', arrowText: 'Secure channel established', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: true },
+            { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello with supported cipher suites, an ECDHE key share, and a random nonce.', arrowDir: 'right', arrowText: 'Cipher suites, ECDHE key share, nonce', activePillars: ['keyExchange'], newProps: [{key:'kx', label:'Key Exchange →'}] },
+            { label: 'Step 2', title: 'ServerHello', desc: 'Server responds with selected cipher suite and its ECDHE key share. Both sides now derive handshake traffic keys via HKDF. Authentication is NOT yet established — the certificate has not been sent or verified.', arrowDir: 'left', arrowText: 'Selected suite, server key share', activePillars: ['keyExchange'], newProps: [{key:'enc', label:'Handshake encrypted'}] },
+            { label: 'Step 3', title: 'Certificate', desc: 'Server sends EncryptedExtensions + Certificate + CertificateVerify + Finished, all encrypted under handshake traffic keys. Client verifies the chain locally (Leaf → Intermediate → Root trust anchor). Authentication is now established.', arrowDir: 'left', arrowText: 'Certificate, CertificateVerify, Finished (encrypted)', activePillars: ['keyExchange', 'authentication', 'encryption'], showCertChain: true, newProps: [{key:'auth', label:'Auth established'}] },
+            { label: 'Step 4', title: 'Client Finished', desc: 'Client sends its Finished message — an HMAC over the entire handshake transcript, proving transcript integrity. Both sides derive complementary client/server application traffic secrets via HKDF (not one shared key).', arrowDir: 'right', arrowText: 'Client Finished (transcript MAC)', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], newProps: [{key:'int', label:'Integrity ✓'}, {key:'enc', label:'App keys active'}] },
+            { label: 'Step 5', title: 'Encrypted Data', desc: 'Application data flows encrypted with AEAD (AES-256-GCM). Each record carries a 16-byte authentication tag — integral to the AEAD cipher, not a separate HMAC.', arrowDir: 'right', arrowText: 'Encrypted records + AEAD auth tags', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], newProps: [] },
+            { label: 'Step 6', title: 'Handshake Complete', desc: 'All four pillars are satisfied. The TLS 1.3 connection is fully established.', arrowDir: 'right', arrowText: 'Secure channel established', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: true, newProps: [] },
         ];
 
         // TLS 1.2 RSA downgrade — fully separate step data
         const stepsDowngrade = [
-            { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello. Without a supported_versions extension advertising TLS 1.3, the server falls back to TLS 1.2. No key_share is sent — key exchange happens later via RSA.', arrowDir: 'right', arrowText: 'Cipher suites (no key_share)', activePillars: ['keyExchange'] },
-            { label: 'Step 2', title: 'Certificate', desc: 'Server sends ServerHello, Certificate, and ServerHelloDone — all in cleartext. The certificate is exposed on the wire before any encryption is established. Client verifies the chain.', arrowDir: 'left', arrowText: 'ServerHello, Certificate, ServerHelloDone (cleartext)', activePillars: ['keyExchange', 'authentication'], showCertChain: true },
-            { label: 'Step 3', title: 'Key Exchange', desc: 'Client generates a random pre-master secret, encrypts it with the server\'s RSA public key, and sends ClientKeyExchange. Only the server can decrypt it — but if its private key is ever stolen, all past sessions are decryptable.', arrowDir: 'right', arrowText: 'ClientKeyExchange (RSA-encrypted premaster), CCS, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'] },
-            { label: 'Step 4', title: 'Server Finished', desc: 'Server decrypts the pre-master secret with its RSA private key, derives session keys using PRF (not HKDF), and sends Change Cipher Spec + Finished. Handshake complete — no forward secrecy.', arrowDir: 'left', arrowText: 'Change Cipher Spec, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'] },
-            { label: 'Step 5', title: 'App Data', desc: 'Application data flows encrypted. Without forward secrecy, the session keys are derivable from the server RSA private key. Any recorded session can be decrypted retroactively if that key is compromised.', arrowDir: 'right', arrowText: 'Encrypted application data', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'] },
-            { label: 'Step 6', title: 'Complete (degraded)', desc: 'TLS 1.2 connection established — no forward secrecy. The session key is bound to the server\'s long-lived RSA private key rather than an ephemeral ECDHE share.', arrowDir: 'left', arrowText: 'Encrypted response', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: false },
+            { label: 'Step 1', title: 'ClientHello', desc: 'Client sends ClientHello. Without a supported_versions extension advertising TLS 1.3, the server falls back to TLS 1.2. No key_share is sent — key exchange happens later via RSA.', arrowDir: 'right', arrowText: 'Cipher suites (no key_share)', activePillars: ['keyExchange'], newProps: [{key:'kx', label:'Key Exchange →'}] },
+            { label: 'Step 2', title: 'Certificate', desc: 'Server sends ServerHello, Certificate, and ServerHelloDone — all in cleartext. The certificate is exposed on the wire before any encryption is established. Client verifies the chain.', arrowDir: 'left', arrowText: 'ServerHello, Certificate, ServerHelloDone (cleartext)', activePillars: ['keyExchange', 'authentication'], showCertChain: true, newProps: [{key:'auth', label:'Auth (cleartext)'}] },
+            { label: 'Step 3', title: 'Key Exchange', desc: 'Client generates a random pre-master secret, encrypts it with the server\'s RSA public key, and sends ClientKeyExchange. Only the server can decrypt it — but if its private key is ever stolen, all past sessions are decryptable.', arrowDir: 'right', arrowText: 'ClientKeyExchange (RSA-encrypted premaster), CCS, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'], newProps: [{key:'enc', label:'Encrypted'}] },
+            { label: 'Step 4', title: 'Server Finished', desc: 'Server decrypts the pre-master secret with its RSA private key, derives session keys using PRF (not HKDF), and sends Change Cipher Spec + Finished. Handshake complete — no forward secrecy.', arrowDir: 'left', arrowText: 'Change Cipher Spec, Finished', activePillars: ['keyExchange', 'authentication', 'encryption'], newProps: [] },
+            { label: 'Step 5', title: 'App Data', desc: 'Application data flows encrypted. Without forward secrecy, the session keys are derivable from the server RSA private key. Any recorded session can be decrypted retroactively if that key is compromised.', arrowDir: 'right', arrowText: 'Encrypted application data', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], newProps: [{key:'int', label:'Integrity ✓'}] },
+            { label: 'Step 6', title: 'Complete (degraded)', desc: 'TLS 1.2 connection established — no forward secrecy. The session key is bound to the server\'s long-lived RSA private key rather than an ephemeral ECDHE share.', arrowDir: 'left', arrowText: 'Encrypted response', activePillars: ['keyExchange', 'authentication', 'encryption', 'integrity'], showStatus: false, newProps: [] },
         ];
 
         // TLS 1.2 protocol tree per packet
@@ -1026,11 +1027,21 @@
                 row.classList.toggle('ws-row-hidden', i > idx);
             });
 
-            // Wizard step labels — update text for scenario
+            // Wizard step labels + property chips
             const wLabels = isDowngrade ? wizardLabelsTLS12 : wizardLabelsTLS13;
+            const allSteps = isDowngrade ? stepsDowngrade : steps;
             wizardSteps.forEach((ws, i) => {
                 ws.classList.toggle('active', i === idx);
-                ws.textContent = wLabels[i];
+                ws.querySelector('.ws-label').textContent = wLabels[i];
+                const chips = ws.querySelector('.ws-chips');
+                if (i <= idx) {
+                    const props = allSteps[i].newProps || [];
+                    chips.innerHTML = props.map(p =>
+                        '<span class="ws-chip ws-chip-' + p.key + '">' + p.label + '</span>'
+                    ).join('');
+                } else {
+                    chips.innerHTML = '';
+                }
             });
 
             // Step indicator
