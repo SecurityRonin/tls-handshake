@@ -1383,7 +1383,7 @@
             els.arrowLabel.className = 'arrow-label dir-' + s.arrowDir;
 
             // Attacker node — shown for any scenario involving an active on-path attacker
-            const mitmVisible = sc.mitm || sc.freak || sc.logjam || sc.renego;
+            const mitmVisible = sc.mitm || sc.freak || sc.logjam || sc.renego || sc.ticketTheft || sc.recordTamper;
             els.mitmAttacker.style.display = mitmVisible ? '' : 'none';
             els.arrowAreaRight.style.display = mitmVisible ? '' : 'none';
             if (mitmVisible) {
