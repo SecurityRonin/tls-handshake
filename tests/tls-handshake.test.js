@@ -1075,11 +1075,21 @@ test.describe('Correctness fixes', () => {
         await expect(page.locator('#next-step')).toBeDisabled();
     });
 
-    test('ALPN: protocol tree shows Alert record, not EncryptedExtensions', async ({ page }) => {
+    test('ALPN: protocol tree shows encrypted application_data carrying a fatal alert, not EncryptedExtensions', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-alpn');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
-        await expect(page.locator('#ws-detail')).toContainText('Alert');
+        await expect(page.locator('#ws-detail')).toContainText('Application Data (23)');
+        await expect(page.locator('#ws-detail')).toContainText('Alert Message (decrypted)');
+        await expect(page.locator('#ws-detail')).not.toContainText('EncryptedExtensions');
+    });
+
+    test('OCSP: protocol tree shows stapled status inside Certificate, not EncryptedExtensions', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ocsp');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('CertificateEntry');
+        await expect(page.locator('#ws-detail')).toContainText('status_request');
         await expect(page.locator('#ws-detail')).not.toContainText('EncryptedExtensions');
     });
 
@@ -1178,5 +1188,35 @@ test.describe('ALPN step content override', () => {
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         const desc = await page.locator('#step-description').textContent();
         expect(desc).not.toMatch(/EncryptedExtensions|CertificateVerify/i);
+    });
+});
+
+test.describe('RFC reference accuracy', () => {
+    // ECH extension 0xfe0d is registered under RFC 9849 ("TLS Encrypted Client Hello").
+    // RFC 9258 is "Importing External PSKs for TLS 1.3" — completely unrelated.
+    test('ECH protocol tree cites RFC 9849, not RFC 9258', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ech');
+        const detail = await page.locator('#ws-detail').textContent();
+        expect(detail).toContain('RFC 9849');
+        expect(detail).not.toContain('RFC 9258');
+    });
+
+    // RFC 7469 is HTTP Public Key Pinning (HPKP) — a deprecated browser mechanism.
+    // App-level SPKI pinning has no single RFC; citing RFC 7469 is misleading.
+    test('cert-pin protocol tree does not cite deprecated RFC 7469 (HPKP)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-cert-pin');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).not.toContainText('RFC 7469');
+    });
+
+    // RFC 8446 §4.4.3: if client Certificate message is empty, client MUST NOT send CertificateVerify.
+    // The protocol tree header must not imply CertificateVerify is sent.
+    test('client-auth-fail protocol tree header does not list CertificateVerify', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-client-auth-fail');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).not.toContainText('CertificateVerify');
     });
 });
