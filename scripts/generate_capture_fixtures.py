@@ -262,3 +262,7 @@ def build() -> None:
 
 if __name__ == "__main__":
     build()
+    subprocess.run(
+        ["python3", str(ROOT / "scripts" / "refresh_capture_manifest.py")],
+        check=True,
+    )

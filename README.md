@@ -82,11 +82,22 @@ python3 -m http.server 3009 --directory web
 
 ## Capture Fixtures
 
-The repo now includes capture fixtures for the highest-value protocol scenarios in:
+The repo now includes real local capture fixtures for reproducible TLS 1.3 scenarios in:
+
+- `fixtures/captures/sni.pcap`
+- `fixtures/captures/hostname.pcap`
+- `fixtures/captures/mitm.pcap`
+- `fixtures/captures/client-auth-fail.pcap`
+- `fixtures/captures/mtls.pcap`
+- `fixtures/captures/hrr.pcap`
+- `fixtures/captures/psk-resumption.pcap`
+- `fixtures/captures/zero-rtt.pcap`
+- `fixtures/captures/alpn-mismatch.pcap`
+
+The repo also keeps illustrative or synthetic fixtures for scenarios that are not straightforward to reproduce honestly on the wire with local tooling:
 
 - `fixtures/captures/freak.pcapng`
 - `fixtures/captures/logjam.pcapng`
-- `fixtures/captures/alpn-mismatch.pcap`
 - `fixtures/captures/ocsp-revoked.pcapng`
 - `fixtures/captures/quic-http3.pcapng`
 
@@ -96,7 +107,13 @@ Most are generated from source hexdumps in `fixtures/capture-src/` using:
 npm run captures:build
 ```
 
-`alpn-mismatch.pcap` is a real capture fixture derived from a local TLS 1.3 ALPN failure and rewritten to use student-facing client/server addresses instead of loopback addresses. The manifest at `fixtures/captures/manifest.json` is refreshed with `tshark` so the capture assets can be inspected reproducibly rather than edited ad hoc inside the UI.
+The real local TLS 1.3 captures are generated with:
+
+```bash
+npm run captures:real
+```
+
+This command uses `openssl s_server`, `openssl s_client`, and `tcpdump` on `lo0`, so it requires local packet-capture privileges. These fixtures intentionally preserve loopback addresses (`127.0.0.1`) because they are genuine captures, not rewritten demos. The manifest at `fixtures/captures/manifest.json` is refreshed with `tshark` so both real and illustrative capture assets can be inspected reproducibly rather than edited ad hoc inside the UI.
 
 ## Testing
 

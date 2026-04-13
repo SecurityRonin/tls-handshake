@@ -1,105 +1,6 @@
 {
-  "freak": {
-    "pcap": "fixtures/captures/freak.pcapng",
-    "source": "fixtures/capture-src/freak.txt",
-    "packet_count": 6,
-    "summary": [
-      {
-        "frame": "1",
-        "src": "192.168.1.10",
-        "dst": "93.184.216.34",
-        "protocol": "SSL",
-        "info": ""
-      },
-      {
-        "frame": "2",
-        "src": "93.184.216.34",
-        "dst": "192.168.1.10",
-        "protocol": "TLSv1.2",
-        "info": "Server Hello, Ignored Unknown Record"
-      },
-      {
-        "frame": "3",
-        "src": "192.168.1.10",
-        "dst": "93.184.216.34",
-        "protocol": "TCP",
-        "info": "55000 \u2192 443 [ACK] Seq=49 Ack=65 Win=8192 Len=48"
-      },
-      {
-        "frame": "4",
-        "src": "93.184.216.34",
-        "dst": "192.168.1.10",
-        "protocol": "TLSv1.2",
-        "info": "Change Cipher Spec"
-      },
-      {
-        "frame": "5",
-        "src": "192.168.1.10",
-        "dst": "93.184.216.34",
-        "protocol": "TLSv1.2",
-        "info": "Client Hello, Ignored Unknown Record"
-      },
-      {
-        "frame": "6",
-        "src": "93.184.216.34",
-        "dst": "192.168.1.10",
-        "protocol": "TLSv1.2",
-        "info": "Encrypted Handshake Message, Ignored Unknown Record"
-      }
-    ]
-  },
-  "logjam": {
-    "pcap": "fixtures/captures/logjam.pcapng",
-    "source": "fixtures/capture-src/logjam.txt",
-    "packet_count": 6,
-    "summary": [
-      {
-        "frame": "1",
-        "src": "192.168.1.10",
-        "dst": "93.184.216.34",
-        "protocol": "SSL",
-        "info": ""
-      },
-      {
-        "frame": "2",
-        "src": "93.184.216.34",
-        "dst": "192.168.1.10",
-        "protocol": "SSL",
-        "info": ""
-      },
-      {
-        "frame": "3",
-        "src": "192.168.1.10",
-        "dst": "93.184.216.34",
-        "protocol": "TCP",
-        "info": "55000 \u2192 443 [ACK] Seq=49 Ack=65 Win=8192 Len=48"
-      },
-      {
-        "frame": "4",
-        "src": "93.184.216.34",
-        "dst": "192.168.1.10",
-        "protocol": "TCP",
-        "info": "443 \u2192 55000 [ACK] Seq=65 Ack=97 Win=8192 Len=32"
-      },
-      {
-        "frame": "5",
-        "src": "192.168.1.10",
-        "dst": "93.184.216.34",
-        "protocol": "TLSv1",
-        "info": "Client Hello, Continuation Data"
-      },
-      {
-        "frame": "6",
-        "src": "93.184.216.34",
-        "dst": "192.168.1.10",
-        "protocol": "TCP",
-        "info": "443 \u2192 55000 [ACK] Seq=97 Ack=129 Win=8192 Len=32"
-      }
-    ]
-  },
   "alpn-mismatch": {
     "pcap": "fixtures/captures/alpn-mismatch.pcap",
-    "source": "fixtures/capture-src/alpn-mismatch.txt",
     "packet_count": 12,
     "summary": [
       {
@@ -186,11 +87,853 @@
         "protocol": "TCP",
         "info": "[TCP Retransmission] 61020 \u2192 443 [FIN, ACK] Seq=1459 Ack=9 Win=408320 Len=0 TSval=2092208603 TSecr=1266501533"
       }
+    ],
+    "source": "fixtures/capture-src/alpn-mismatch.txt"
+  },
+  "client-auth-fail": {
+    "pcap": "fixtures/captures/client-auth-fail.pcap",
+    "packet_count": 26,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52670 \u2192 4513 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=880357754 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4513 \u2192 52670 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=2615772512 TSecr=880357754 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52670 \u2192 4513 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=880357754 TSecr=2615772512"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4513 \u2192 52670 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=2615772512 TSecr=880357754"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4513 \u2192 52670 [ACK] Seq=1 Ack=246 Win=408128 Len=0 TSval=2615772512 TSecr=880357754"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52670 \u2192 4513 [ACK] Seq=246 Ack=2125 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Change Cipher Spec, Application Data, Application Data"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4513 \u2192 52670 [ACK] Seq=2125 Ack=356 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52670 \u2192 4513 [ACK] Seq=356 Ack=2149 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52670 \u2192 4513 [FIN, ACK] Seq=356 Ack=2149 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4513 \u2192 52670 [FIN, ACK] Seq=2149 Ack=356 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "15",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 4513 \u2192 52670 [FIN, ACK] Seq=2149 Ack=357 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "16",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 4513 \u2192 52670 [FIN, ACK] Seq=2149 Ack=357 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "17",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 4513 \u2192 52670 [FIN, ACK] Seq=2149 Ack=357 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "18",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 4513 \u2192 52670 [FIN, ACK] Seq=2149 Ack=357 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "19",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 52670 \u2192 4513 [FIN, ACK] Seq=356 Ack=2150 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "20",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 4513 \u2192 52670 [FIN, ACK] Seq=2149 Ack=357 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "21",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Dup ACK 19#1] 52670 \u2192 4513 [ACK] Seq=357 Ack=2150 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "22",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Dup ACK 19#2] 52670 \u2192 4513 [ACK] Seq=357 Ack=2150 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "23",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Dup ACK 19#3] 52670 \u2192 4513 [ACK] Seq=357 Ack=2150 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "24",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Dup ACK 19#4] 52670 \u2192 4513 [ACK] Seq=357 Ack=2150 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      },
+      {
+        "frame": "25",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Dup ACK 15#1] 4513 \u2192 52670 [ACK] Seq=2150 Ack=357 Win=408064 Len=0 TSval=2615772514 TSecr=880357756"
+      },
+      {
+        "frame": "26",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Dup ACK 19#5] 52670 \u2192 4513 [ACK] Seq=357 Ack=2150 Win=406208 Len=0 TSval=880357756 TSecr=2615772514"
+      }
+    ]
+  },
+  "freak": {
+    "pcap": "fixtures/captures/freak.pcapng",
+    "packet_count": 6,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Server Hello, Ignored Unknown Record"
+      },
+      {
+        "frame": "3",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "55000 \u2192 443 [ACK] Seq=49 Ack=65 Win=8192 Len=48"
+      },
+      {
+        "frame": "4",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Change Cipher Spec"
+      },
+      {
+        "frame": "5",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TLSv1.2",
+        "info": "Client Hello, Ignored Unknown Record"
+      },
+      {
+        "frame": "6",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Encrypted Handshake Message, Ignored Unknown Record"
+      }
+    ],
+    "source": "fixtures/capture-src/freak.txt"
+  },
+  "hostname": {
+    "pcap": "fixtures/captures/hostname.pcap",
+    "packet_count": 14,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52644 \u2192 4511 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=4006664324 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4511 \u2192 52644 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=3114868438 TSecr=4006664324 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52644 \u2192 4511 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=4006664324 TSecr=3114868438"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4511 \u2192 52644 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=3114868438 TSecr=4006664324"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4511 \u2192 52644 [ACK] Seq=1 Ack=246 Win=408128 Len=0 TSval=3114868438 TSecr=4006664324"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52644 \u2192 4511 [ACK] Seq=246 Ack=1354 Win=406976 Len=0 TSval=4006664325 TSecr=3114868439"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Alert (Level: Fatal, Description: Bad Certificate)"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52644 \u2192 4511 [FIN, ACK] Seq=253 Ack=1354 Win=406976 Len=0 TSval=4006664325 TSecr=3114868439"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4511 \u2192 52644 [ACK] Seq=1354 Ack=253 Win=408128 Len=0 TSval=3114868439 TSecr=4006664325"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4511 \u2192 52644 [ACK] Seq=1354 Ack=254 Win=408128 Len=0 TSval=3114868439 TSecr=4006664325"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4511 \u2192 52644 [FIN, ACK] Seq=1354 Ack=254 Win=408128 Len=0 TSval=3114868439 TSecr=4006664325"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52644 \u2192 4511 [ACK] Seq=254 Ack=1355 Win=406976 Len=0 TSval=4006664325 TSecr=3114868439"
+      }
+    ]
+  },
+  "hrr": {
+    "pcap": "fixtures/captures/hrr.pcap",
+    "packet_count": 26,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=1459583308 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=3787474505 TSecr=1459583308 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=1459583308 TSecr=3787474505"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4515 \u2192 52702 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=3787474505 TSecr=1459583308"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [ACK] Seq=1 Ack=230 Win=408128 Len=0 TSval=3787474505 TSecr=1459583308"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Hello Retry Request, Change Cipher Spec"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=230 Ack=100 Win=408256 Len=0 TSval=1459583308 TSecr=3787474505"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Change Cipher Spec, Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [ACK] Seq=100 Ack=498 Win=407872 Len=0 TSval=3787474508 TSecr=1459583311"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Application Data, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=498 Ack=1468 Win=406912 Len=0 TSval=1459583312 TSecr=3787474509"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "15",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [FIN, ACK] Seq=596 Ack=1468 Win=406912 Len=0 TSval=1459583313 TSecr=3787474509"
+      },
+      {
+        "frame": "16",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [ACK] Seq=1468 Ack=572 Win=407808 Len=0 TSval=3787474510 TSecr=1459583313"
+      },
+      {
+        "frame": "17",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [ACK] Seq=1468 Ack=596 Win=407808 Len=0 TSval=3787474510 TSecr=1459583313"
+      },
+      {
+        "frame": "18",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [ACK] Seq=1468 Ack=597 Win=407808 Len=0 TSval=3787474510 TSecr=1459583313"
+      },
+      {
+        "frame": "19",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "20",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "21",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "22",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4515 \u2192 52702 [FIN, ACK] Seq=2002 Ack=597 Win=407808 Len=0 TSval=3787474510 TSecr=1459583313"
+      },
+      {
+        "frame": "23",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=597 Ack=1723 Win=406720 Len=0 TSval=1459583313 TSecr=3787474510"
+      },
+      {
+        "frame": "24",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=597 Ack=1978 Win=406528 Len=0 TSval=1459583313 TSecr=3787474510"
+      },
+      {
+        "frame": "25",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=597 Ack=2002 Win=406528 Len=0 TSval=1459583313 TSecr=3787474510"
+      },
+      {
+        "frame": "26",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52702 \u2192 4515 [ACK] Seq=597 Ack=2003 Win=406528 Len=0 TSval=1459583313 TSecr=3787474510"
+      }
+    ]
+  },
+  "logjam": {
+    "pcap": "fixtures/captures/logjam.pcapng",
+    "packet_count": 6,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "3",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "55000 \u2192 443 [ACK] Seq=49 Ack=65 Win=8192 Len=48"
+      },
+      {
+        "frame": "4",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 55000 [ACK] Seq=65 Ack=97 Win=8192 Len=32"
+      },
+      {
+        "frame": "5",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TLSv1",
+        "info": "Client Hello, Continuation Data"
+      },
+      {
+        "frame": "6",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 55000 [ACK] Seq=97 Ack=129 Win=8192 Len=32"
+      }
+    ],
+    "source": "fixtures/capture-src/logjam.txt"
+  },
+  "mitm": {
+    "pcap": "fixtures/captures/mitm.pcap",
+    "packet_count": 14,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52649 \u2192 4512 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=477552350 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4512 \u2192 52649 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=4181270068 TSecr=477552350 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52649 \u2192 4512 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=477552350 TSecr=4181270068"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4512 \u2192 52649 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=4181270068 TSecr=477552350"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4512 \u2192 52649 [ACK] Seq=1 Ack=246 Win=408128 Len=0 TSval=4181270068 TSecr=477552350"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52649 \u2192 4512 [ACK] Seq=246 Ack=1342 Win=407040 Len=0 TSval=477552351 TSecr=4181270069"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Alert (Level: Fatal, Description: Unknown CA)"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52649 \u2192 4512 [FIN, ACK] Seq=253 Ack=1342 Win=407040 Len=0 TSval=477552351 TSecr=4181270069"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4512 \u2192 52649 [ACK] Seq=1342 Ack=253 Win=408128 Len=0 TSval=4181270069 TSecr=477552351"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4512 \u2192 52649 [ACK] Seq=1342 Ack=254 Win=408128 Len=0 TSval=4181270069 TSecr=477552351"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4512 \u2192 52649 [FIN, ACK] Seq=1342 Ack=254 Win=408128 Len=0 TSval=4181270069 TSecr=477552351"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52649 \u2192 4512 [ACK] Seq=254 Ack=1343 Win=407040 Len=0 TSval=477552351 TSecr=4181270069"
+      }
+    ]
+  },
+  "mtls": {
+    "pcap": "fixtures/captures/mtls.pcap",
+    "packet_count": 22,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=213716298 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4514 \u2192 52678 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=302862195 TSecr=213716298 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=213716298 TSecr=302862195"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4514 \u2192 52678 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=302862195 TSecr=213716298"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4514 \u2192 52678 [ACK] Seq=1 Ack=246 Win=408128 Len=0 TSval=302862195 TSecr=213716298"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [ACK] Seq=246 Ack=2125 Win=406208 Len=0 TSval=213716300 TSecr=302862197"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Change Cipher Spec, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [FIN, ACK] Seq=2151 Ack=2125 Win=406208 Len=0 TSval=213716302 TSecr=302862197"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4514 \u2192 52678 [ACK] Seq=2125 Ack=2127 Win=406272 Len=0 TSval=302862199 TSecr=213716302"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4514 \u2192 52678 [ACK] Seq=2125 Ack=2151 Win=406272 Len=0 TSval=302862199 TSecr=213716302"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4514 \u2192 52678 [ACK] Seq=2125 Ack=2152 Win=406272 Len=0 TSval=302862199 TSecr=213716302"
+      },
+      {
+        "frame": "15",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "16",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "17",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "18",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [ACK] Seq=2152 Ack=3084 Win=405312 Len=0 TSval=213716302 TSecr=302862199"
+      },
+      {
+        "frame": "19",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4514 \u2192 52678 [FIN, ACK] Seq=4067 Ack=2152 Win=406272 Len=0 TSval=302862199 TSecr=213716302"
+      },
+      {
+        "frame": "20",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [ACK] Seq=2152 Ack=4043 Win=404416 Len=0 TSval=213716302 TSecr=302862199"
+      },
+      {
+        "frame": "21",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [ACK] Seq=2152 Ack=4067 Win=404416 Len=0 TSval=213716303 TSecr=302862199"
+      },
+      {
+        "frame": "22",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52678 \u2192 4514 [ACK] Seq=2152 Ack=4068 Win=404416 Len=0 TSval=213716303 TSecr=302862199"
+      }
     ]
   },
   "ocsp-revoked": {
     "pcap": "fixtures/captures/ocsp-revoked.pcapng",
-    "source": "fixtures/capture-src/ocsp-revoked.txt",
     "packet_count": 4,
     "summary": [
       {
@@ -221,11 +964,157 @@
         "protocol": "TCP",
         "info": "55002 \u2192 443 [ACK] Seq=65 Ack=129 Win=8192 Len=25"
       }
+    ],
+    "source": "fixtures/capture-src/ocsp-revoked.txt"
+  },
+  "psk-resumption": {
+    "pcap": "fixtures/captures/psk-resumption.pcap",
+    "packet_count": 20,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=1347604214 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4516 \u2192 52737 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=4047134673 TSecr=1347604214 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=1347604214 TSecr=4047134673"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4516 \u2192 52737 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=4047134673 TSecr=1347604214"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4516 \u2192 52737 [ACK] Seq=1 Ack=517 Win=407808 Len=0 TSval=4047134673 TSecr=1347604214"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [ACK] Seq=517 Ack=242 Win=408128 Len=0 TSval=1347604214 TSecr=4047134673"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Change Cipher Spec, Application Data"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4516 \u2192 52737 [ACK] Seq=242 Ack=597 Win=407744 Len=0 TSval=4047134674 TSecr=1347604215"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4516 \u2192 52737 [FIN, ACK] Seq=521 Ack=597 Win=407744 Len=0 TSval=4047134674 TSecr=1347604215"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [ACK] Seq=597 Ack=497 Win=407936 Len=0 TSval=1347604215 TSecr=4047134674"
+      },
+      {
+        "frame": "15",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [ACK] Seq=597 Ack=521 Win=407936 Len=0 TSval=1347604215 TSecr=4047134674"
+      },
+      {
+        "frame": "16",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [ACK] Seq=597 Ack=522 Win=407936 Len=0 TSval=1347604215 TSecr=4047134674"
+      },
+      {
+        "frame": "17",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "18",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52737 \u2192 4516 [FIN, ACK] Seq=621 Ack=522 Win=407936 Len=0 TSval=1347604215 TSecr=4047134674"
+      },
+      {
+        "frame": "19",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4516 \u2192 52737 [ACK] Seq=522 Ack=621 Win=407744 Len=0 TSval=4047134674 TSecr=1347604215"
+      },
+      {
+        "frame": "20",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4516 \u2192 52737 [ACK] Seq=522 Ack=622 Win=407744 Len=0 TSval=4047134674 TSecr=1347604215"
+      }
     ]
   },
   "quic-http3": {
     "pcap": "fixtures/captures/quic-http3.pcapng",
-    "source": "fixtures/capture-src/quic-http3.txt",
     "packet_count": 6,
     "summary": [
       {
@@ -269,6 +1158,313 @@
         "dst": "192.168.1.10",
         "protocol": "QUIC",
         "info": "Protected Payload (KP0)"
+      }
+    ],
+    "source": "fixtures/capture-src/quic-http3.txt"
+  },
+  "sni": {
+    "pcap": "fixtures/captures/sni.pcap",
+    "packet_count": 22,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=3102843097 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4510 \u2192 52615 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=51080657 TSecr=3102843097 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=3102843097 TSecr=51080657"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4510 \u2192 52615 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=51080657 TSecr=3102843097"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com)"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4510 \u2192 52615 [ACK] Seq=1 Ack=246 Win=408128 Len=0 TSval=51080657 TSecr=3102843097"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [ACK] Seq=246 Ack=1342 Win=407040 Len=0 TSval=3102843099 TSecr=51080659"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Change Cipher Spec, Application Data"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [FIN, ACK] Seq=350 Ack=1342 Win=407040 Len=0 TSval=3102843099 TSecr=51080659"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4510 \u2192 52615 [ACK] Seq=1342 Ack=326 Win=408064 Len=0 TSval=51080659 TSecr=3102843099"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4510 \u2192 52615 [ACK] Seq=1342 Ack=350 Win=408064 Len=0 TSval=51080659 TSecr=3102843099"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4510 \u2192 52615 [ACK] Seq=1342 Ack=351 Win=408064 Len=0 TSval=51080659 TSecr=3102843099"
+      },
+      {
+        "frame": "15",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "16",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "17",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "18",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4510 \u2192 52615 [FIN, ACK] Seq=1876 Ack=351 Win=408064 Len=0 TSval=51080659 TSecr=3102843099"
+      },
+      {
+        "frame": "19",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [ACK] Seq=351 Ack=1597 Win=406848 Len=0 TSval=3102843099 TSecr=51080659"
+      },
+      {
+        "frame": "20",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [ACK] Seq=351 Ack=1852 Win=406656 Len=0 TSval=3102843099 TSecr=51080659"
+      },
+      {
+        "frame": "21",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [ACK] Seq=351 Ack=1876 Win=406656 Len=0 TSval=3102843099 TSecr=51080659"
+      },
+      {
+        "frame": "22",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52615 \u2192 4510 [ACK] Seq=351 Ack=1877 Win=406656 Len=0 TSval=3102843099 TSecr=51080659"
+      }
+    ]
+  },
+  "zero-rtt": {
+    "pcap": "fixtures/captures/zero-rtt.pcap",
+    "packet_count": 20,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=225835223 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4517 \u2192 52759 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=1186975874 TSecr=225835223 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=225835223 TSecr=1186975874"
+      },
+      {
+        "frame": "4",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 4517 \u2192 52759 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=1186975874 TSecr=225835223"
+      },
+      {
+        "frame": "5",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello (SNI=example.com), Change Cipher Spec, Application Data"
+      },
+      {
+        "frame": "6",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4517 \u2192 52759 [ACK] Seq=1 Ack=378 Win=408000 Len=0 TSval=1186975874 TSecr=225835223"
+      },
+      {
+        "frame": "7",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Server Hello, Change Cipher Spec, Application Data, Application Data"
+      },
+      {
+        "frame": "8",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [ACK] Seq=378 Ack=246 Win=408128 Len=0 TSval=225835223 TSecr=1186975874"
+      },
+      {
+        "frame": "9",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data, Application Data"
+      },
+      {
+        "frame": "10",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4517 \u2192 52759 [ACK] Seq=246 Ack=478 Win=407936 Len=0 TSval=1186975874 TSecr=225835223"
+      },
+      {
+        "frame": "11",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "12",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "13",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4517 \u2192 52759 [FIN, ACK] Seq=357 Ack=478 Win=407936 Len=0 TSval=1186975875 TSecr=225835223"
+      },
+      {
+        "frame": "14",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [ACK] Seq=478 Ack=333 Win=408064 Len=0 TSval=225835224 TSecr=1186975875"
+      },
+      {
+        "frame": "15",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [ACK] Seq=478 Ack=357 Win=408064 Len=0 TSval=225835224 TSecr=1186975875"
+      },
+      {
+        "frame": "16",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [ACK] Seq=478 Ack=358 Win=408064 Len=0 TSval=225835224 TSecr=1186975875"
+      },
+      {
+        "frame": "17",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TLSv1.3",
+        "info": "Application Data"
+      },
+      {
+        "frame": "18",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "52759 \u2192 4517 [FIN, ACK] Seq=502 Ack=358 Win=408064 Len=0 TSval=225835224 TSecr=1186975875"
+      },
+      {
+        "frame": "19",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4517 \u2192 52759 [ACK] Seq=358 Ack=502 Win=407936 Len=0 TSval=1186975875 TSecr=225835224"
+      },
+      {
+        "frame": "20",
+        "src": "127.0.0.1",
+        "dst": "127.0.0.1",
+        "protocol": "TCP",
+        "info": "4517 \u2192 52759 [ACK] Seq=358 Ack=503 Win=407936 Len=0 TSval=1186975875 TSecr=225835224"
       }
     ]
   }
