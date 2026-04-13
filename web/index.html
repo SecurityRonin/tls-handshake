@@ -706,7 +706,7 @@
                 transport: 'Long-header packet setup, connection IDs, anti-amplification rules, and retransmission state all live in QUIC.',
                 payload: 'TLS ClientHello bytes ride inside a CRYPTO frame; there is no TLS record wrapper.',
                 stack: ['UDP datagram', 'QUIC Initial', 'CRYPTO frame', 'TLS ClientHello', 'quic_transport_parameters'],
-                byteNote: 'Read the hex top-down: QUIC header bytes first, then CRYPTO frame metadata, then the embedded TLS handshake bytes.'
+                byteNote: 'Truncated — actual UDP datagram is padded to 1,200 bytes (RFC 9000 §14.1 anti-amplification minimum). Read the hex top-down: long-header flag, QUIC v1 magic, connection IDs, then CRYPTO frame metadata, then embedded TLS ClientHello bytes, then zero-pad.'
             },
             {
                 summary: 'The server flight spans QUIC Initial and Handshake packet number spaces. ServerHello switches the crypto level, and the rest of the TLS flight is protected inside QUIC packets.',
@@ -715,7 +715,7 @@
                 transport: 'QUIC decides packet type, ACK/retransmit behavior, and key phase transitions without TCP underneath.',
                 payload: 'CRYPTO frames carry ServerHello, EncryptedExtensions, Certificate, CertificateVerify, and Finished.',
                 stack: ['UDP datagram', 'QUIC Initial', 'QUIC Handshake', 'CRYPTO frames', 'TLS server flight'],
-                byteNote: 'This is the critical moment to teach that TLS handshake bytes continue, but the surrounding container is QUIC packet protection, not TLS records.'
+                byteNote: 'Truncated — the certificate alone is ~1–4 KB, so this flight spans multiple UDP datagrams. Notice that TLS handshake bytes continue here, but the surrounding container is QUIC packet protection — there is no TLS record layer.'
             },
             {
                 summary: 'The client answers in the Handshake packet number space with a CRYPTO frame holding Finished. After this, both sides can send 1-RTT application data.',
@@ -724,25 +724,25 @@
                 transport: 'QUIC confirms the handshake at the transport layer while preparing stream-carrying application packets.',
                 payload: 'TLS Finished is the last handshake message; after it, HTTP/3 data can move on QUIC streams.',
                 stack: ['UDP datagram', 'QUIC Handshake', 'CRYPTO frame', 'TLS Finished'],
-                byteNote: 'Students should see this as the last pure handshake packet before application traffic begins.'
+                byteNote: 'This is the last pure handshake packet. After Finished is verified, both sides unlock 1-RTT keys and application traffic can begin.'
             },
             {
-                summary: 'Now the handshake is done and HTTP/3 starts. The client sends a request on a QUIC stream inside a 1-RTT packet.',
+                summary: 'The handshake is complete and HTTP/3 starts. You send a request on a QUIC stream inside a 1-RTT packet.',
                 space: '1-RTT application space. New packet number space, independent of Initial and Handshake.',
                 keys: '1-RTT application keys. These protect normal request and response traffic.',
                 transport: 'QUIC provides multiplexed streams, loss recovery, ACKs, and packet protection.',
                 payload: 'HTTP/3 HEADERS frame carries the request semantics over a QUIC stream.',
                 stack: ['UDP datagram', 'QUIC 1-RTT', 'STREAM frame', 'HTTP/3 HEADERS', 'GET /'],
-                byteNote: 'This is where the model shifts from handshake bytes in CRYPTO frames to application bytes in STREAM frames.'
+                byteNote: 'Notice the shift: handshake bytes rode in CRYPTO frames; application bytes now ride in STREAM frames. The packet number space also changed from Handshake to 1-RTT.'
             },
             {
-                summary: 'The server returns response headers in another 1-RTT packet. HTTP/3 is now just application data inside QUIC.',
+                summary: 'The server returns response headers in another 1-RTT packet. HTTP/3 is now application data inside QUIC.',
                 space: '1-RTT application space.',
                 keys: '1-RTT application keys remain active.',
                 transport: 'QUIC keeps stream ordering local to each stream and avoids TCP-style cross-stream head-of-line blocking.',
                 payload: 'HTTP/3 HEADERS frame returns status and metadata.',
                 stack: ['UDP datagram', 'QUIC 1-RTT', 'STREAM frame', 'HTTP/3 HEADERS', '200 OK'],
-                byteNote: 'The key teaching point is that HTTP/3 does not sit on TLS records or TCP segments; it sits on QUIC streams.'
+                byteNote: 'HTTP/3 does not sit on TLS records or TCP segments — it rides directly on QUIC streams. The same QUIC machinery that carried handshake CRYPTO frames now carries application STREAM frames.'
             },
             {
                 summary: 'Response body bytes continue over QUIC 1-RTT packets. Reliability, congestion control, and encryption all stay inside QUIC.',
@@ -1666,18 +1666,32 @@
         ];
 
         const hexQUIC = [
+            // Packet 1: QUIC Initial (ClientHello) — padded to 1200 bytes per RFC 9000 §14.1
             [H('0000','c3 00 00 00 01 08 83 94 c8 f0 3e 51 57 08 00 44','..........>QW..D'),
-             H('0010','9e 7b 9a ec 34 00 44 f2 00 00 18 06 00 40 75 00','.{..4.D......@u.'),
-             H('0020','01 00 00 71 03 03 7f 3a 9b 2c 00 d4 e1 8a 6f 29','...q...:.,....o)')],
-            [H('0000','cf 00 00 00 01 08 83 94 c8 f0 3e 51 57 08 00 88','..........>QW...'),
-             H('0010','9e 7b 9a ec 35 00 44 f3 00 00 42 06 00 40 76 00','.{..5.D...B..@v.'),
-             H('0020','02 00 00 97 03 03 a8 c4 e1 f0 00 2b 00 02 03 04','...........+....')],
+             H('0010','9e 7b 9a ec 34 44 b4 00 00 18 06 00 40 f5 01 00','  .{..4D......@..'),
+             H('0020','01 00 71 03 03 7f 3a 9b 2c 00 d4 e1 8a 6f 29 73','...q...:.,....o)'),
+             H('0030','b5 17 42 8c a0 3e 55 f8 91 c2 00 20 13 01 13 02','..B..>U.... ....'),
+             H('0040','13 03 00 ff 01 00 00 8e 00 2b 00 05 04 03 04 03','..........+.....'),
+             H('0050','03 00 33 00 47 00 45 00 17 00 41 04 5b 15 0b 16','..3.G.E...A.[...'),
+             H('...','[918 bytes PADDING frames — RFC 9000 §14.1: client Initial must be ≥ 1200 bytes]','')],
+            // Packet 2: QUIC Initial + Handshake (server flight, spans multiple datagrams)
+            [H('0000','cf 00 00 00 01 08 83 94 c8 f0 3e 51 57 08 08 f0','..........>QW...'),
+             H('0010','9a ec 35 48 00 44 f3 00 00 48 02 00 00 97 03 03','..5H.D...H......'),
+             H('0020','a8 c4 e1 f0 00 2b 00 02 03 04 13 01 00 00 2f 00','  .....+....../. '),
+             H('0030','33 00 24 00 17 00 20 5b 15 0b 16 5c 4e 95 23 0e','3.$... [...\\N.#.'),
+             H('0040','cf 00 00 00 01 08 83 94 c8 f0 3e 51 57 08 00 c8','..........>QW...'),
+             H('0050','30 82 04 5e 30 82 03 46 a0 03 02 01 02 02 12 04','0..^0..F........'),
+             H('...','[~4–8 KB across multiple datagrams: EncryptedExtensions, Certificate, CertVerify, Finished]','')],
+            // Packet 3: QUIC Handshake (client Finished)
             [H('0000','e1 40 5c 9f 12 34 56 78 9a bc de f0 00 00 22 06','.@\\..4Vx......\".'),
-             H('0010','00 00 1e 14 00 00 30 ab cd ef 01 23 45 67 89 ab','......0....#Eg..')],
+             H('0010','00 00 1e 14 00 00 30 ab cd ef 01 23 45 67 89 ab','......0....#Eg..'),
+             H('0020','cd ef 01 23 45 67 89 ab cd ef 00 00 00 00 00 00','...#Eg..........'),
+             H('0030','[AEAD tag — 16 bytes GCM authentication tag]','')],
+            // Packets 4–6: QUIC 1-RTT short-header (application data)
             [H('0000','41 9a bc de f0 12 34 56 78 00 01 04 00 00 00 01','A.....4Vx.......'),
-             H('0010','82 84 41 8a 08 9d 5c 0b 81 70 dc 78','..A...\\..p.x')],
+             H('0010','82 84 41 8a 08 9d 5c 0b 81 70 dc 78 f1 a2 b3 c4','..A...\\..p......')],
             [H('0000','42 9a bc de f0 98 76 54 32 00 01 04 00 00 00 01','B.....vT2.......'),
-             H('0010','88 5f 92 49 7c a5 89 d3 4d 1f 43 ae','._.I|...M.C.')],
+             H('0010','88 5f 92 49 7c a5 89 d3 4d 1f 43 ae ba 0c 41 a4','._.I|...M.C...A.')],
             [H('0000','43 9a bc de f0 aa bb cc dd 7f 3a 2c 55 f8 91 c2','C.........:,U...'),
              H('0010','d4 e1 8a 6f 29 73 b5 17 42 8c a0 3e f7 c1 d5 e9','...o)s..B..>....'),
              H('0020','f2 06 1a 2e 42 56 6a 7e 92 a6 ba ce e2 f6 0a 1e','....BVj~........')],
