@@ -976,6 +976,35 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
     });
 
+    test.describe('touch device', () => {
+        test.use({ hasTouch: true });
+
+        test('QUIC: tapping Initial lane at step 2 shows Initial-specific content (touch)', async ({ page }) => {
+            await page.goto('/');
+            await page.tap('#scenario-quic');
+            await page.tap('#next-step');
+            await page.tap('#quic-lanes .qsl-row[data-space="initial"]');
+            await expect(page.locator('#quic-under-hood')).toContainText('crypto level upgrades');
+        });
+
+        test('QUIC: tapping Handshake lane at step 2 shows Handshake-specific content (touch)', async ({ page }) => {
+            await page.goto('/');
+            await page.tap('#scenario-quic');
+            await page.tap('#next-step');
+            await page.tap('#quic-lanes .qsl-row[data-space="handshake"]');
+            await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+        });
+
+        test('QUIC: tapping outside lanes restores step-default content (touch)', async ({ page }) => {
+            await page.goto('/');
+            await page.tap('#scenario-quic');
+            await page.tap('#next-step');
+            await page.tap('#quic-lanes .qsl-row[data-space="initial"]');
+            await page.tap('#step-indicator');
+            await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+        });
+    });
+
     // ── 7. Session Ticket Theft ───────────────────────────────────────────────
     test('ticket-theft: radio exists', async ({ page }) => {
         await page.goto('/');
