@@ -187,30 +187,24 @@
         #warning-message { display: none; background: #2d1f00; border: 1px solid #d29922; color: #d29922; padding: 0.8rem 1rem; border-radius: 8px; text-align: left; font-size: 0.82rem; }
         #warning-message.visible { display: block; }
 
-        /* QUIC under-the-hood panel */
-        .quic-panel {
-            display: none; background: #111927; border: 1px solid #2f6feb; border-radius: 12px;
-            padding: 1rem; color: #c9d1d9;
-        }
-        .quic-panel.visible { display: block; }
-        .quic-panel h3 { color: #58a6ff; font-size: 0.9rem; margin-bottom: 0.7rem; }
-        .quic-panel p { font-size: 0.76rem; line-height: 1.5; color: #b7c0ca; margin-bottom: 0.8rem; }
-        .quic-grid {
-            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem;
-            margin-bottom: 0.8rem;
-        }
-        .quic-card {
-            background: rgba(255,255,255,0.03); border: 1px solid #30363d; border-radius: 8px; padding: 0.55rem 0.65rem;
-        }
-        .quic-card-label { display: block; font-size: 0.62rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
-        .quic-card-value { font-size: 0.76rem; color: #e6edf3; line-height: 1.35; }
-        @media (max-width: 900px) {
-            .quic-grid { grid-template-columns: 1fr; }
-        }
-
-        /* QUIC packet-number-space swimlane */
+        /* QUIC swimlane + under-the-hood (side-by-side) */
         #quic-swimlane { display: none; background: #0d1117; border: 1px solid #30363d; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; font-size: 0.73rem; }
-        #quic-swimlane.visible { display: block; }
+        #quic-swimlane.visible { display: flex; align-items: stretch; }
+        #quic-lanes { flex: 1; min-width: 0; }
+        #quic-under-hood {
+            width: 230px; flex-shrink: 0; border-left: 1px solid #21262d;
+            background: #111927; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;
+        }
+        .quh-title { font-size: 0.7rem; font-weight: 700; color: #58a6ff; text-transform: uppercase; letter-spacing: 0.06em; }
+        #quic-summary { font-size: 0.72rem; line-height: 1.5; color: #b7c0ca; margin: 0; }
+        .quic-grid { display: flex; flex-direction: column; gap: 0.4rem; }
+        .quic-card { background: rgba(255,255,255,0.03); border: 1px solid #30363d; border-radius: 6px; padding: 0.45rem 0.55rem; }
+        .quic-card-label { display: block; font-size: 0.6rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.15rem; }
+        .quic-card-value { font-size: 0.7rem; color: #e6edf3; line-height: 1.35; }
+        @media (max-width: 900px) {
+            #quic-swimlane.visible { flex-direction: column; }
+            #quic-under-hood { width: auto; border-left: none; border-top: 1px solid #21262d; }
+        }
         .qsl-row { display: grid; grid-template-columns: 72px 1fr; border-top: 1px solid #21262d; }
         .qsl-space-badge { display: flex; align-items: center; justify-content: center; padding: 0.5rem 0.2rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-right: 2px solid; writing-mode: vertical-rl; text-orientation: mixed; }
         .qsl-row[data-space="initial"]   .qsl-space-badge { color: #d29922; border-color: #d29922; background: rgba(210,153,34,0.06); }
@@ -403,8 +397,28 @@
     <!-- Hex Pane -->
     <div class="ws-hex-pane" id="ws-hex"></div>
 
-    <!-- QUIC Swimlane (replaces hex pane for QUIC scenario) -->
-    <div id="quic-swimlane"></div>
+    <!-- QUIC Swimlane + Under The Hood (replaces hex pane for QUIC scenario) -->
+    <div id="quic-swimlane">
+        <div id="quic-lanes"></div>
+        <div id="quic-under-hood">
+            <div class="quh-title">Under The Hood</div>
+            <p id="quic-summary"></p>
+            <div class="quic-grid">
+                <div class="quic-card">
+                    <span class="quic-card-label">Key Phase</span>
+                    <div class="quic-card-value" id="quic-keys"></div>
+                </div>
+                <div class="quic-card">
+                    <span class="quic-card-label">Transport Job</span>
+                    <div class="quic-card-value" id="quic-transport"></div>
+                </div>
+                <div class="quic-card">
+                    <span class="quic-card-label">Payload Job</span>
+                    <div class="quic-card-value" id="quic-payload"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Decrypt Callout -->
     <div id="decrypt-callout">TLS 1.3 encrypts everything after ServerHello — without the session keys, packets 3-6 appear as opaque "Application Data."</div>
@@ -432,24 +446,6 @@
         <div id="connection-status">Connection secure</div>
         <div id="failure-message"></div>
         <div id="warning-message"></div>
-        <div class="quic-panel" id="quic-under-hood">
-            <h3>QUIC Under The Hood</h3>
-            <p id="quic-summary"></p>
-            <div class="quic-grid">
-                <div class="quic-card">
-                    <span class="quic-card-label">Key Phase</span>
-                    <div class="quic-card-value" id="quic-keys"></div>
-                </div>
-                <div class="quic-card">
-                    <span class="quic-card-label">Transport Job</span>
-                    <div class="quic-card-value" id="quic-transport"></div>
-                </div>
-                <div class="quic-card">
-                    <span class="quic-card-label">Payload Job</span>
-                    <div class="quic-card-value" id="quic-payload"></div>
-                </div>
-            </div>
-        </div>
 
         <!-- What-If Scenarios -->
         <div class="toggles">
@@ -591,11 +587,11 @@
             wsHex: document.getElementById('ws-hex'),
             loadKeys: document.getElementById('load-keys'),
             decryptCallout: document.getElementById('decrypt-callout'),
-            quicPanel: document.getElementById('quic-under-hood'),
             quicSummary: document.getElementById('quic-summary'),
             quicKeys: document.getElementById('quic-keys'),
             quicTransport: document.getElementById('quic-transport'),
             quicPayload: document.getElementById('quic-payload'),
+            quicLanes: document.getElementById('quic-lanes'),
             quicSwimlane: document.getElementById('quic-swimlane'),
         };
 
@@ -760,7 +756,7 @@
             { key: '1rtt',      label: '1-RTT',     color: '#3fb950' },
         ];
         function renderQuicSwimlane(idx) {
-            els.quicSwimlane.innerHTML = quicSpaces.map(sp => {
+            els.quicLanes.innerHTML = quicSpaces.map(sp => {
                 const arrows = quicArrows.filter(a => a.space === sp.key);
                 const rows = arrows.map(a => {
                     const state = a.step < idx ? 'visited' : a.step === idx ? 'active' : 'future';
@@ -1850,13 +1846,11 @@
 
             if (sc.quic) {
                 const q = quicTeaching[idx];
-                els.quicPanel.classList.add('visible');
                 els.quicSummary.textContent = q.summary;
                 els.quicKeys.textContent = q.keys;
                 els.quicTransport.textContent = q.transport;
                 els.quicPayload.textContent = q.payload;
             } else {
-                els.quicPanel.classList.remove('visible');
                 els.quicSummary.textContent = '';
                 els.quicKeys.textContent = '';
                 els.quicTransport.textContent = '';
