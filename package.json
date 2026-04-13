@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "captures:build": "python3 scripts/generate_capture_fixtures.py"
+    "captures:build": "python3 scripts/generate_capture_fixtures.py",
+    "captures:real": "bash scripts/generate_real_capture_fixtures.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0"
