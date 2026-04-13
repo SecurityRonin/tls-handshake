@@ -811,6 +811,15 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#warning-message')).toContainText('QUIC');
     });
 
+    test('QUIC: under-the-hood panel is visible with packet number space and key phase', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-under-hood')).toBeVisible();
+        await expect(page.locator('#quic-under-hood')).toContainText('Packet Number Space');
+        await expect(page.locator('#quic-under-hood')).toContainText('Initial');
+        await expect(page.locator('#quic-under-hood')).toContainText('Initial keys');
+    });
+
     test('QUIC: next step is NOT disabled', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
@@ -822,6 +831,18 @@ test.describe('What-If Scenarios — New', () => {
         await page.click('#scenario-quic');
         for (let i = 0; i < 5; i++) await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 6');
+    });
+
+    test('QUIC: under-the-hood panel switches from CRYPTO handshake to HTTP/3 stream view', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await expect(page.locator('#quic-under-hood')).toContainText('Handshake keys');
+        await expect(page.locator('#quic-under-hood')).toContainText('CRYPTO frames');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#quic-under-hood')).toContainText('1-RTT application keys');
+        await expect(page.locator('#quic-under-hood')).toContainText('STREAM frame');
+        await expect(page.locator('#quic-under-hood')).toContainText('HTTP/3 HEADERS');
     });
 
     // ── 7. Session Ticket Theft ───────────────────────────────────────────────
@@ -1002,6 +1023,12 @@ test.describe('Scenario Protocol Trees — New', () => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await expect(page.locator('#ws-detail')).toContainText('CRYPTO Frame');
+    });
+
+    test('QUIC: step 1 protocol tree shows packet number space', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#ws-detail')).toContainText('Packet Number Space');
     });
 
     test('ticket-theft: step 2 protocol tree shows stolen', async ({ page }) => {
