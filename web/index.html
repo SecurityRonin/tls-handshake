@@ -777,18 +777,15 @@
         }
         // Delegated listeners — attached once, read quicCurrentIdx at call time
         (function attachQuicLaneListeners() {
-            els.quicLanes.addEventListener('mouseover', e => {
+            const showRow = e => {
                 const row = e.target.closest('.qsl-row');
                 if (!row) return;
                 const a = arrowForSpace(row.dataset.space);
                 if (a) showArrowContent(a);
-            });
-            els.quicLanes.addEventListener('focusin', e => {
-                const row = e.target.closest('.qsl-row');
-                if (!row) return;
-                const a = arrowForSpace(row.dataset.space);
-                if (a) showArrowContent(a);
-            });
+            };
+            els.quicLanes.addEventListener('mouseover', showRow);
+            els.quicLanes.addEventListener('focusin', showRow);
+            els.quicLanes.addEventListener('click', showRow);
             const restoreDefault = e => {
                 if (!els.quicLanes.contains(e.relatedTarget)) {
                     showArrowContent(defaultArrowForStep(quicCurrentIdx));
@@ -796,6 +793,11 @@
             };
             els.quicLanes.addEventListener('mouseleave', () => showArrowContent(defaultArrowForStep(quicCurrentIdx)));
             els.quicLanes.addEventListener('focusout', restoreDefault);
+            document.addEventListener('click', e => {
+                if (!els.quicLanes.contains(e.target)) {
+                    showArrowContent(defaultArrowForStep(quicCurrentIdx));
+                }
+            });
         })();
         function renderQuicSwimlane(idx) {
             quicCurrentIdx = idx;
