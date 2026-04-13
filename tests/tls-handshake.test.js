@@ -1116,3 +1116,39 @@ test.describe('Correctness fixes', () => {
         expect(labelText).toContain('Revoked certificate (OCSP staple)');
     });
 });
+
+test.describe('ALPN step content override', () => {
+    // When ALPN alert fires at step 3, the server never sends a cert flight.
+    // Auth and encryption pillars must NOT be active; step content must describe the alert, not the cert exchange.
+
+    test('ALPN step 3: authentication pillar is NOT active (cert never sent)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
+    });
+
+    test('ALPN step 3: encryption pillar is NOT active (handshake keys never used for cert flight)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#pillar-encryption')).not.toHaveClass(/active/);
+    });
+
+    test('ALPN step 3: arrow text describes Alert, not cert flight', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        const arrow = await page.locator('#arrow-label').textContent();
+        expect(arrow).toMatch(/Alert|no_application_protocol/i);
+        expect(arrow).not.toMatch(/Certificate|CertificateVerify/i);
+    });
+
+    test('ALPN step 3: step description does not mention cert exchange', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        const desc = await page.locator('#step-description').textContent();
+        expect(desc).not.toMatch(/EncryptedExtensions|CertificateVerify/i);
+    });
+});
