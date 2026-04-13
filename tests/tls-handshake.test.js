@@ -1063,3 +1063,63 @@ test.describe('Scenario ordering', () => {
         ]);
     });
 });
+
+test.describe('Correctness fixes', () => {
+    // Issue 1: ALPN — no_application_protocol is a fatal alert, handshake must abort
+    test('ALPN: handshake fails at step 3 (no_application_protocol is a fatal alert, not a fallback)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 3');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText('no_application_protocol');
+    });
+
+    test('ALPN: next step is disabled after fatal alert', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#next-step')).toBeDisabled();
+    });
+
+    test('ALPN: protocol tree shows Alert record, not EncryptedExtensions', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('Alert');
+        await expect(page.locator('#ws-detail')).not.toContainText('EncryptedExtensions');
+    });
+
+    // Issue 2: generic noFs "RSA key exchange" warning must not fire for Logjam (DHE) or Renegotiation
+    test('Logjam: step 4 warning does not mention RSA key exchange (Logjam is DHE, not RSA)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-logjam');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 4');
+        await expect(page.locator('#warning-message')).not.toContainText('RSA key exchange');
+    });
+
+    test('Renego: step 4 warning does not mention RSA key exchange (renegotiation is not a key-exchange issue)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-renego');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#step-indicator')).toContainText('Step 4');
+        await expect(page.locator('#warning-message')).not.toContainText('RSA key exchange');
+    });
+
+    // Issue 3: record-tamper fires post-handshake; failure banner must not say "Handshake failed"
+    test('record-tamper: failure message says "Connection aborted", not "Handshake failed"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-record-tamper');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#failure-message')).toContainText('Connection aborted');
+        await expect(page.locator('#failure-message')).not.toContainText('Handshake failed');
+    });
+
+    // Issue 5: OCSP label must be narrowed to what is actually modelled (stapled revocation)
+    test('OCSP radio label is scoped to what is modelled: revoked certificate via OCSP staple', async ({ page }) => {
+        await page.goto('/');
+        const labelText = await page.locator('label[for="scenario-ocsp"]').textContent();
+        expect(labelText).toContain('Revoked certificate (OCSP staple)');
+    });
+});
