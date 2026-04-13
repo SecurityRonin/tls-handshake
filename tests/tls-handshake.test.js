@@ -944,6 +944,38 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
     });
 
+    test('QUIC: lane rows are keyboard-focusable (tabindex="0")', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        const row = page.locator('#quic-lanes .qsl-row[data-space="initial"]');
+        await expect(row).toHaveAttribute('tabindex', '0');
+    });
+
+    test('QUIC: focusing Initial lane at step 2 shows Initial-specific content', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await page.focus('#quic-lanes .qsl-row[data-space="initial"]');
+        await expect(page.locator('#quic-under-hood')).toContainText('crypto level upgrades');
+    });
+
+    test('QUIC: focusing Handshake lane at step 2 shows Handshake-specific content', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await page.focus('#quic-lanes .qsl-row[data-space="handshake"]');
+        await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+    });
+
+    test('QUIC: tabbing away from lanes restores step-default content', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await page.focus('#quic-lanes .qsl-row[data-space="initial"]');
+        await page.focus('#next-step');
+        await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+    });
+
     // ── 7. Session Ticket Theft ───────────────────────────────────────────────
     test('ticket-theft: radio exists', async ({ page }) => {
         await page.goto('/');
