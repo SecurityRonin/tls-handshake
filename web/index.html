@@ -1348,14 +1348,15 @@
             });
 
             // Wizard step labels + property chips
-            const wLabels = sc.hrr ? wizardLabelsHRR : isDowngrade ? wizardLabelsTLS12 : wizardLabelsTLS13;
+            let wLabels = sc.hrr ? wizardLabelsHRR : isDowngrade ? wizardLabelsTLS12 : wizardLabelsTLS13;
+            if (sc.alpn) wLabels = [...wLabels.slice(0, 2), '3. ALPN Alert', ...wLabels.slice(3)];
             const allSteps = sc.hrr ? stepsHRR : sc.logjam ? stepsLogjam : (isDowngrade ? stepsDowngrade : steps);
             wizardSteps.forEach((ws, i) => {
                 ws.classList.toggle('active', i === idx);
                 ws.querySelector('.ws-label').textContent = wLabels[i];
                 const chips = ws.querySelector('.ws-chips');
                 if (i <= idx) {
-                    const props = allSteps[i].newProps || [];
+                    const props = (sc.alpn && i === 2) ? [] : (allSteps[i].newProps || []);
                     chips.innerHTML = props.map(p =>
                         '<span class="ws-chip ws-chip-' + p.key + '">' + p.label + '</span>'
                     ).join('');
