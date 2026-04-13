@@ -2,7 +2,7 @@
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/placeholder/deploy-status)](https://tls-handshake.securityronin.com)
 
-Interactive step-by-step **TLS 1.3 handshake** demonstration. See how key exchange, authentication, encryption, and integrity work together. Toggle failure scenarios to see what breaks.
+Interactive step-by-step **TLS 1.3 handshake** demonstration plus **TLS 1.2 downgrade and legacy attack** scenarios. See how key exchange, authentication, encryption, and integrity work together, and trace how different failures or protocol regressions break the channel.
 
 **[Live Demo →](https://tls-handshake.securityronin.com)**
 
@@ -85,7 +85,7 @@ python3 -m http.server 3009 --directory web
 npm test
 ```
 
-158 Playwright E2E tests covering security headers, happy path, scenario toggles, protocol trees, and reset.
+165 Playwright E2E tests covering security headers, happy path, scenario toggles, protocol trees, and reset.
 
 ## Tech Stack
 
