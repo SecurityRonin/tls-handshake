@@ -1117,6 +1117,34 @@ test.describe('Correctness fixes', () => {
     });
 });
 
+test.describe('ALPN wizard timeline override', () => {
+    // The wizard timeline must not label step 3 "Certificate" when ALPN aborts before the cert flight.
+    // The "Auth established" chip must not appear since auth was never established.
+
+    test('ALPN step 3: wizard label is not "Certificate"', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        const label = await page.locator('.wizard-step:nth-child(3) .ws-label').textContent();
+        expect(label).not.toMatch(/Certificate/i);
+    });
+
+    test('ALPN step 3: wizard label mentions Alert or ALPN', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        const label = await page.locator('.wizard-step:nth-child(3) .ws-label').textContent();
+        expect(label).toMatch(/Alert|ALPN/i);
+    });
+
+    test('ALPN step 3: "Auth established" chip does not appear in wizard', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-alpn');
+        for (let i = 0; i < 2; i++) await page.click('#next-step');
+        await expect(page.locator('.ws-chip-auth')).not.toBeVisible();
+    });
+});
+
 test.describe('ALPN step content override', () => {
     // When ALPN alert fires at step 3, the server never sends a cert flight.
     // Auth and encryption pillars must NOT be active; step content must describe the alert, not the cert exchange.
