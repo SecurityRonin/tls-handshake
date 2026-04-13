@@ -819,12 +819,11 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#warning-message')).toContainText('QUIC');
     });
 
-    test('QUIC: under-the-hood panel is visible with packet number space and key phase', async ({ page }) => {
+    test('QUIC: under-the-hood panel is visible with key phase and transport job', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await expect(page.locator('#quic-under-hood')).toBeVisible();
-        await expect(page.locator('#quic-under-hood')).toContainText('Packet Number Space');
-        await expect(page.locator('#quic-under-hood')).toContainText('Initial');
+        await expect(page.locator('#quic-under-hood')).toContainText('Key Phase');
         await expect(page.locator('#quic-under-hood')).toContainText('Initial keys');
     });
 

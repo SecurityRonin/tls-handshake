@@ -204,14 +204,6 @@
         }
         .quic-card-label { display: block; font-size: 0.62rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
         .quic-card-value { font-size: 0.76rem; color: #e6edf3; line-height: 1.35; }
-        .quic-stack { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.8rem; }
-        .quic-stack-chip {
-            background: rgba(88,166,255,0.1); border: 1px solid rgba(88,166,255,0.28); color: #58a6ff;
-            border-radius: 999px; padding: 0.18rem 0.5rem; font-size: 0.68rem;
-        }
-        .quic-panel .quic-byte-note {
-            font-size: 0.72rem; color: #d29922; line-height: 1.45;
-        }
         @media (max-width: 900px) {
             .quic-grid { grid-template-columns: 1fr; }
         }
@@ -445,10 +437,6 @@
             <p id="quic-summary"></p>
             <div class="quic-grid">
                 <div class="quic-card">
-                    <span class="quic-card-label">Packet Number Space</span>
-                    <div class="quic-card-value" id="quic-space"></div>
-                </div>
-                <div class="quic-card">
                     <span class="quic-card-label">Key Phase</span>
                     <div class="quic-card-value" id="quic-keys"></div>
                 </div>
@@ -461,8 +449,6 @@
                     <div class="quic-card-value" id="quic-payload"></div>
                 </div>
             </div>
-            <div class="quic-stack" id="quic-stack"></div>
-            <div class="quic-byte-note" id="quic-byte-note"></div>
         </div>
 
         <!-- What-If Scenarios -->
@@ -607,12 +593,9 @@
             decryptCallout: document.getElementById('decrypt-callout'),
             quicPanel: document.getElementById('quic-under-hood'),
             quicSummary: document.getElementById('quic-summary'),
-            quicSpace: document.getElementById('quic-space'),
             quicKeys: document.getElementById('quic-keys'),
             quicTransport: document.getElementById('quic-transport'),
             quicPayload: document.getElementById('quic-payload'),
-            quicStack: document.getElementById('quic-stack'),
-            quicByteNote: document.getElementById('quic-byte-note'),
             quicSwimlane: document.getElementById('quic-swimlane'),
         };
 
@@ -725,57 +708,39 @@
         const quicTeaching = [
             {
                 summary: 'A UDP datagram carries one QUIC Initial packet. Inside it, a CRYPTO frame transports raw TLS ClientHello bytes plus QUIC transport parameters.',
-                space: 'Initial space only. Packet numbers here are separate from Handshake and 1-RTT packets.',
-                keys: 'Initial keys. Derived from the destination connection ID and QUIC v1 initial salt before any certificate is seen.',
+                keys: 'Initial keys — derived from the destination connection ID and the QUIC v1 initial salt before any certificate is seen.',
                 transport: 'Long-header packet setup, connection IDs, anti-amplification rules, and retransmission state all live in QUIC.',
                 payload: 'TLS ClientHello bytes ride inside a CRYPTO frame; there is no TLS record wrapper.',
-                stack: ['UDP datagram', 'QUIC Initial', 'CRYPTO frame', 'TLS ClientHello', 'quic_transport_parameters'],
-                byteNote: 'Truncated — actual UDP datagram is padded to 1,200 bytes (RFC 9000 §14.1 anti-amplification minimum). Read the hex top-down: long-header flag, QUIC v1 magic, connection IDs, then CRYPTO frame metadata, then embedded TLS ClientHello bytes, then zero-pad.'
             },
             {
                 summary: 'The server flight spans QUIC Initial and Handshake packet number spaces. ServerHello switches the crypto level, and the rest of the TLS flight is protected inside QUIC packets.',
-                space: 'Two spaces in play: Initial for the first response bytes, then Handshake space after ServerHello.',
                 keys: 'Initial keys first, then Handshake keys immediately after ServerHello. QUIC packet protection changes mid-flight.',
                 transport: 'QUIC decides packet type, ACK/retransmit behavior, and key phase transitions without TCP underneath.',
                 payload: 'CRYPTO frames carry ServerHello, EncryptedExtensions, Certificate, CertificateVerify, and Finished.',
-                stack: ['UDP datagram', 'QUIC Initial', 'QUIC Handshake', 'CRYPTO frames', 'TLS server flight'],
-                byteNote: 'Truncated — the certificate alone is ~1–4 KB, so this flight spans multiple UDP datagrams. Notice that TLS handshake bytes continue here, but the surrounding container is QUIC packet protection — there is no TLS record layer.'
             },
             {
                 summary: 'The client answers in the Handshake packet number space with a CRYPTO frame holding Finished. After this, both sides can send 1-RTT application data.',
-                space: 'Handshake space. Still separate from the later 1-RTT application packet numbers.',
                 keys: 'Handshake keys protect this packet; successful Finished verification unlocks 1-RTT keys.',
                 transport: 'QUIC confirms the handshake at the transport layer while preparing stream-carrying application packets.',
                 payload: 'TLS Finished is the last handshake message; after it, HTTP/3 data can move on QUIC streams.',
-                stack: ['UDP datagram', 'QUIC Handshake', 'CRYPTO frame', 'TLS Finished'],
-                byteNote: 'This is the last pure handshake packet. After Finished is verified, both sides unlock 1-RTT keys and application traffic can begin.'
             },
             {
                 summary: 'The handshake is complete and HTTP/3 starts. You send a request on a QUIC stream inside a 1-RTT packet.',
-                space: '1-RTT application space. New packet number space, independent of Initial and Handshake.',
-                keys: '1-RTT application keys. These protect normal request and response traffic.',
-                transport: 'QUIC provides multiplexed streams, loss recovery, ACKs, and packet protection.',
-                payload: 'HTTP/3 HEADERS frame carries the request semantics over a QUIC stream.',
-                stack: ['UDP datagram', 'QUIC 1-RTT', 'STREAM frame', 'HTTP/3 HEADERS', 'GET /'],
-                byteNote: 'Notice the shift: handshake bytes rode in CRYPTO frames; application bytes now ride in STREAM frames. The packet number space also changed from Handshake to 1-RTT.'
+                keys: '1-RTT application keys — these protect normal request and response traffic.',
+                transport: 'QUIC provides multiplexed streams, loss recovery, ACKs, and packet protection without TCP.',
+                payload: 'HTTP/3 HEADERS frame rides inside a QUIC STREAM frame — notice the shift from CRYPTO frames used during the handshake.',
             },
             {
                 summary: 'The server returns response headers in another 1-RTT packet. HTTP/3 is now application data inside QUIC.',
-                space: '1-RTT application space.',
                 keys: '1-RTT application keys remain active.',
-                transport: 'QUIC keeps stream ordering local to each stream and avoids TCP-style cross-stream head-of-line blocking.',
-                payload: 'HTTP/3 HEADERS frame returns status and metadata.',
-                stack: ['UDP datagram', 'QUIC 1-RTT', 'STREAM frame', 'HTTP/3 HEADERS', '200 OK'],
-                byteNote: 'HTTP/3 does not sit on TLS records or TCP segments — it rides directly on QUIC streams. The same QUIC machinery that carried handshake CRYPTO frames now carries application STREAM frames.'
+                transport: 'QUIC keeps stream ordering local to each stream, avoiding TCP-style cross-stream head-of-line blocking.',
+                payload: 'HTTP/3 HEADERS frame returns status and metadata inside a QUIC STREAM frame.',
             },
             {
                 summary: 'Response body bytes continue over QUIC 1-RTT packets. Reliability, congestion control, and encryption all stay inside QUIC.',
-                space: '1-RTT application space.',
                 keys: '1-RTT application keys.',
                 transport: 'QUIC handles retransmission and loss recovery per packet while streams deliver ordered application bytes.',
-                payload: 'HTTP/3 DATA frame carries the response body.',
-                stack: ['UDP datagram', 'QUIC 1-RTT', 'STREAM frame', 'HTTP/3 DATA'],
-                byteNote: 'Under the hood, the same QUIC transport machinery that carried the handshake now carries the app payload without a separate TLS record layer.'
+                payload: 'HTTP/3 DATA frame carries the response body — HTTP/3 does not sit on TLS records or TCP segments.',
             },
         ];
 
@@ -1887,23 +1852,15 @@
                 const q = quicTeaching[idx];
                 els.quicPanel.classList.add('visible');
                 els.quicSummary.textContent = q.summary;
-                els.quicSpace.textContent = q.space;
                 els.quicKeys.textContent = q.keys;
                 els.quicTransport.textContent = q.transport;
                 els.quicPayload.textContent = q.payload;
-                els.quicStack.innerHTML = q.stack.map(label =>
-                    '<span class="quic-stack-chip">' + label + '</span>'
-                ).join('');
-                els.quicByteNote.textContent = q.byteNote;
             } else {
                 els.quicPanel.classList.remove('visible');
                 els.quicSummary.textContent = '';
-                els.quicSpace.textContent = '';
                 els.quicKeys.textContent = '';
                 els.quicTransport.textContent = '';
                 els.quicPayload.textContent = '';
-                els.quicStack.innerHTML = '';
-                els.quicByteNote.textContent = '';
             }
 
             // Detail pane — protocol tree
