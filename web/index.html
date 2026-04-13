@@ -969,7 +969,7 @@
             T('SPKI SHA-256: <span class="ws-tree-value">a3 f2 11 cc ... 9b 4d</span> <span class="ws-tree-warn">← received</span>', 4),
             T('Pinned SHA-256: <span class="ws-tree-value">58 a6 ff 30 ... 2e 77</span> <span class="ws-tree-warn">← expected by app</span>', 4, 'warn'),
             T('SPKI hash mismatch ❌ — cert is CA-valid but not pinned', 4, 'warn'),
-            T('Certificate pinning abort: valid chain, wrong SPKI — app rejects (RFC 7469)', 2, 'warn'),
+            T('Certificate pinning abort: valid chain, wrong SPKI — app rejects (no single RFC; HPKP was the now-deprecated browser pin mechanism)', 2, 'warn'),
             T('CertificateVerify: not evaluated — aborted before verification', 2),
         ];
 
@@ -1013,7 +1013,7 @@
             T('Key Share: <span class="ws-tree-value">a1 b2 c3 d4 ... e5 f6 (32 bytes)</span>', 4),
             T('▼ Extension: signature_algorithms (13)', 3, 'layer'),
             T('ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256, ...', 4),
-            T('ECH (Encrypted Client Hello, RFC 9258) would encrypt this extension using server\'s DNS-published key', 0, 'warn'),
+            T('ECH (Encrypted Client Hello, RFC 9849) would encrypt this extension using server\'s DNS-published key', 0, 'warn'),
         ];
 
         const detailScenarioMTLS = [
@@ -1206,7 +1206,7 @@
             T('Transport Layer Security', 0, 'layer'),
             T('▼ TLSv1.3 Record Layer: Application Data (encrypted)', 0, 'layer'),
             T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
-            T('▼ TLS Handshake (decrypted): Certificate + CertificateVerify + Finished', 1, 'layer'),
+            T('▼ TLS Handshake: empty Certificate (client→server) + fatal Alert (server→client) <span class="ws-tree-warn">← RFC 8446 §4.4.3: empty cert means no signing step follows</span>', 1, 'layer'),
             T('▼ Certificate (client → server) <span class="ws-tree-warn">← server sent CertificateRequest in step 3</span>', 2, 'layer'),
             T('certificate_list: <span class="ws-tree-value">(empty)</span> <span class="ws-tree-warn">← client has no certificate to present</span>', 3, 'warn'),
             T('CertificateRequest was issued — client MUST respond. Sending empty Certificate is allowed but server may reject.', 3, 'warn'),
@@ -1222,7 +1222,7 @@
             T('Content Type: <span class="ws-tree-value">Handshake (22)</span>', 1),
             T('▼ Handshake Protocol: Client Hello (outer/public)', 1, 'layer'),
             T('SNI: <span class="ws-tree-value">public.example.com</span> <span class="ws-tree-warn">← outer ClientHello uses a public cover domain, not the actual target</span>', 2),
-            T('▼ Extension: encrypted_client_hello (0xfe0d) <span class="ws-tree-warn">← RFC 9258: encrypts the inner ClientHello</span>', 2, 'layer'),
+            T('▼ Extension: encrypted_client_hello (0xfe0d) <span class="ws-tree-warn">← RFC 9849: encrypts the inner ClientHello</span>', 2, 'layer'),
             T('ECHClientHello type: <span class="ws-tree-value">outer (0)</span>', 3),
             T('cipher_suite: <span class="ws-tree-value">HKDF-SHA256, AES-128-GCM</span>', 3),
             T('config_id: <span class="ws-tree-value">0x42</span> <span class="ws-tree-warn">← matches ECHConfig published in DNS HTTPS record</span>', 3),
@@ -1503,7 +1503,7 @@
             if (!sc.noFs) {
                 // SNI leakage — fires at step 1 (ClientHello)
                 if (step === 1 && sc.sni) {
-                    els.warningMessage.textContent = "SNI leakage: the server name 'example.com' is sent in plaintext in the ClientHello extension — visible to any on-path observer before encryption begins. Encrypted Client Hello (ECH, RFC 9258) encrypts the inner ClientHello using the server's public key published in DNS HTTPS records.";
+                    els.warningMessage.textContent = "SNI leakage: the server name 'example.com' is sent in plaintext in the ClientHello extension — visible to any on-path observer before encryption begins. Encrypted Client Hello (ECH, RFC 9849) encrypts the inner ClientHello using the server's public key published in DNS HTTPS records.";
                     els.warningMessage.classList.add('visible');
                 }
 
