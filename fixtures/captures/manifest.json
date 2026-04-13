@@ -1,0 +1,275 @@
+{
+  "freak": {
+    "pcap": "fixtures/captures/freak.pcapng",
+    "source": "fixtures/capture-src/freak.txt",
+    "packet_count": 6,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Server Hello, Ignored Unknown Record"
+      },
+      {
+        "frame": "3",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "55000 \u2192 443 [ACK] Seq=49 Ack=65 Win=8192 Len=48"
+      },
+      {
+        "frame": "4",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Change Cipher Spec"
+      },
+      {
+        "frame": "5",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TLSv1.2",
+        "info": "Client Hello, Ignored Unknown Record"
+      },
+      {
+        "frame": "6",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Encrypted Handshake Message, Ignored Unknown Record"
+      }
+    ]
+  },
+  "logjam": {
+    "pcap": "fixtures/captures/logjam.pcapng",
+    "source": "fixtures/capture-src/logjam.txt",
+    "packet_count": 6,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "3",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "55000 \u2192 443 [ACK] Seq=49 Ack=65 Win=8192 Len=48"
+      },
+      {
+        "frame": "4",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 55000 [ACK] Seq=65 Ack=97 Win=8192 Len=32"
+      },
+      {
+        "frame": "5",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TLSv1",
+        "info": "Client Hello, Continuation Data"
+      },
+      {
+        "frame": "6",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 55000 [ACK] Seq=97 Ack=129 Win=8192 Len=32"
+      }
+    ]
+  },
+  "alpn-mismatch": {
+    "pcap": "fixtures/captures/alpn-mismatch.pcap",
+    "source": "fixtures/capture-src/alpn-mismatch.txt",
+    "packet_count": 12,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "61020 \u2192 443 [SYN] Seq=0 Win=65535 Len=0 MSS=16344 WS=64 TSval=2092208603 TSecr=0 SACK_PERM"
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 61020 [SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0 MSS=16344 WS=64 TSval=1266501533 TSecr=2092208603 SACK_PERM"
+      },
+      {
+        "frame": "3",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "61020 \u2192 443 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=2092208603 TSecr=1266501533"
+      },
+      {
+        "frame": "4",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "[TCP Window Update] 443 \u2192 61020 [ACK] Seq=1 Ack=1 Win=408320 Len=0 TSval=1266501533 TSecr=2092208603"
+      },
+      {
+        "frame": "5",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TLSv1.3",
+        "info": "Client Hello"
+      },
+      {
+        "frame": "6",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 61020 [ACK] Seq=1 Ack=1459 Win=406912 Len=0 TSval=1266501533 TSecr=2092208603"
+      },
+      {
+        "frame": "7",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TLSv1.2",
+        "info": "Alert (Level: Fatal, Description: No application Protocol)"
+      },
+      {
+        "frame": "8",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "61020 \u2192 443 [ACK] Seq=1459 Ack=8 Win=408320 Len=0 TSval=2092208603 TSecr=1266501533"
+      },
+      {
+        "frame": "9",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 61020 [FIN, ACK] Seq=8 Ack=1459 Win=406912 Len=0 TSval=1266501533 TSecr=2092208603"
+      },
+      {
+        "frame": "10",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "61020 \u2192 443 [FIN, ACK] Seq=1459 Ack=8 Win=408320 Len=0 TSval=2092208603 TSecr=1266501533"
+      },
+      {
+        "frame": "11",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 61020 \u2192 443 [FIN, ACK] Seq=1459 Ack=9 Win=408320 Len=0 TSval=2092208603 TSecr=1266501533"
+      },
+      {
+        "frame": "12",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "[TCP Retransmission] 61020 \u2192 443 [FIN, ACK] Seq=1459 Ack=9 Win=408320 Len=0 TSval=2092208603 TSecr=1266501533"
+      }
+    ]
+  },
+  "ocsp-revoked": {
+    "pcap": "fixtures/captures/ocsp-revoked.pcapng",
+    "source": "fixtures/capture-src/ocsp-revoked.txt",
+    "packet_count": 4,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "SSL",
+        "info": ""
+      },
+      {
+        "frame": "3",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "TCP",
+        "info": "443 \u2192 55002 [ACK] Seq=65 Ack=65 Win=8192 Len=64"
+      },
+      {
+        "frame": "4",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "TCP",
+        "info": "55002 \u2192 443 [ACK] Seq=65 Ack=129 Win=8192 Len=25"
+      }
+    ]
+  },
+  "quic-http3": {
+    "pcap": "fixtures/captures/quic-http3.pcapng",
+    "source": "fixtures/capture-src/quic-http3.txt",
+    "packet_count": 6,
+    "summary": [
+      {
+        "frame": "1",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "QUIC",
+        "info": "55003 \u2192 443 Len=48[Malformed Packet]"
+      },
+      {
+        "frame": "2",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "QUIC",
+        "info": "443 \u2192 55003 Len=48[Malformed Packet]"
+      },
+      {
+        "frame": "3",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "QUIC",
+        "info": "55003 \u2192 443 Len=32[Malformed Packet]"
+      },
+      {
+        "frame": "4",
+        "src": "192.168.1.10",
+        "dst": "93.184.216.34",
+        "protocol": "QUIC",
+        "info": "Protected Payload (KP0)"
+      },
+      {
+        "frame": "5",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "QUIC",
+        "info": "Protected Payload (KP0)"
+      },
+      {
+        "frame": "6",
+        "src": "93.184.216.34",
+        "dst": "192.168.1.10",
+        "protocol": "QUIC",
+        "info": "Protected Payload (KP0)"
+      }
+    ]
+  }
+}

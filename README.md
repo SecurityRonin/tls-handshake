@@ -75,9 +75,28 @@ Toggle scenarios to see how the handshake changes or breaks:
 ```bash
 npm install
 npx playwright install chromium
+npm run captures:build
 python3 -m http.server 3009 --directory web
 # Open http://localhost:3009
 ```
+
+## Capture Fixtures
+
+The repo now includes capture fixtures for the highest-value protocol scenarios in:
+
+- `fixtures/captures/freak.pcapng`
+- `fixtures/captures/logjam.pcapng`
+- `fixtures/captures/alpn-mismatch.pcap`
+- `fixtures/captures/ocsp-revoked.pcapng`
+- `fixtures/captures/quic-http3.pcapng`
+
+Most are generated from source hexdumps in `fixtures/capture-src/` using:
+
+```bash
+npm run captures:build
+```
+
+`alpn-mismatch.pcap` is a real capture fixture derived from a local TLS 1.3 ALPN failure and rewritten to use student-facing client/server addresses instead of loopback addresses. The manifest at `fixtures/captures/manifest.json` is refreshed with `tshark` so the capture assets can be inspected reproducibly rather than edited ad hoc inside the UI.
 
 ## Testing
 
@@ -85,7 +104,7 @@ python3 -m http.server 3009 --directory web
 npm test
 ```
 
-173 Playwright E2E tests covering security headers, happy path, scenario toggles, protocol trees, and reset.
+174 Playwright E2E tests covering security headers, happy path, scenario toggles, protocol trees, capture fixtures, and reset.
 
 ## Tech Stack
 

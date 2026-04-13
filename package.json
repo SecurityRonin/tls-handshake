@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "captures:build": "python3 scripts/generate_capture_fixtures.py"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0"

@@ -1,4 +1,19 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+
+test.describe('Capture fixtures', () => {
+    test('generated capture manifest exists for high-value scenarios', async () => {
+        const raw = fs.readFileSync('fixtures/captures/manifest.json', 'utf8');
+        const manifest = JSON.parse(raw);
+        expect(Object.keys(manifest)).toEqual([
+            'freak',
+            'logjam',
+            'alpn-mismatch',
+            'ocsp-revoked',
+            'quic-http3',
+        ]);
+    });
+});
 
 test.describe('Security headers', () => {
     test('X-Frame-Options is DENY', async ({ request }) => {
@@ -71,11 +86,12 @@ test.describe('TLS 1.3 Happy Path', () => {
         await expect(page.locator('#pillar-key-exchange')).toHaveClass(/active/);
     });
 
-    test('step 2: ServerHello — only key exchange pillar active (auth not yet established)', async ({ page }) => {
+    test('step 2: ServerHello — key exchange and encryption active, auth not yet established', async ({ page }) => {
         await page.goto('/');
         await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 2');
         await expect(page.locator('#pillar-key-exchange')).toHaveClass(/active/);
+        await expect(page.locator('#pillar-encryption')).toHaveClass(/active/);
         await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
     });
 
@@ -982,10 +998,10 @@ test.describe('Scenario Protocol Trees — New', () => {
         await expect(page.locator('#ws-detail')).toContainText('SHA-1');
     });
 
-    test('QUIC: step 1 protocol tree shows QUIC CRYPTO', async ({ page }) => {
+    test('QUIC: step 1 protocol tree shows CRYPTO frame', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
-        await expect(page.locator('#ws-detail')).toContainText('QUIC CRYPTO');
+        await expect(page.locator('#ws-detail')).toContainText('CRYPTO Frame');
     });
 
     test('ticket-theft: step 2 protocol tree shows stolen', async ({ page }) => {
@@ -1166,11 +1182,11 @@ test.describe('ALPN step content override', () => {
         await expect(page.locator('#pillar-authentication')).not.toHaveClass(/active/);
     });
 
-    test('ALPN step 3: encryption pillar is NOT active (handshake keys never used for cert flight)', async ({ page }) => {
+    test('ALPN step 3: encryption pillar IS active (fatal alert is itself encrypted under handshake key)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-alpn');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
-        await expect(page.locator('#pillar-encryption')).not.toHaveClass(/active/);
+        await expect(page.locator('#pillar-encryption')).toHaveClass(/active/);
     });
 
     test('ALPN step 3: arrow text describes Alert, not cert flight', async ({ page }) => {
