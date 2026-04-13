@@ -845,6 +845,55 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#quic-under-hood')).toContainText('HTTP/3 HEADERS');
     });
 
+    // ── QUIC Swimlane ─────────────────────────────────────────────────────────
+    test('QUIC: swimlane div is visible when QUIC selected', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-swimlane')).toBeVisible();
+    });
+
+    test('QUIC: swimlane shows all three packet number space labels', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-swimlane')).toContainText('Initial');
+        await expect(page.locator('#quic-swimlane')).toContainText('Handshake');
+        await expect(page.locator('#quic-swimlane')).toContainText('1-RTT');
+    });
+
+    test('QUIC: swimlane step 1 shows ClientHello arrow as active in Initial space', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-swimlane .qsl-active')).toContainText('ClientHello');
+        await expect(page.locator('#quic-swimlane .qsl-active')).toContainText('CRYPTO');
+    });
+
+    test('QUIC: swimlane step 2 marks step-1 arrow as visited', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await expect(page.locator('#quic-swimlane .qsl-visited')).toContainText('ClientHello');
+    });
+
+    test('QUIC: swimlane step 2 shows server Certificate in Handshake space as active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await expect(page.locator('#quic-swimlane .qsl-row[data-space="handshake"] .qsl-active')).toContainText('Certificate');
+    });
+
+    test('QUIC: swimlane step 4 shows HTTP/3 GET in 1-RTT space as active', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#quic-swimlane .qsl-row[data-space="1rtt"] .qsl-active')).toContainText('GET');
+    });
+
+    test('QUIC: hex pane is hidden when QUIC selected', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#ws-hex')).toBeHidden();
+    });
+
     // ── 7. Session Ticket Theft ───────────────────────────────────────────────
     test('ticket-theft: radio exists', async ({ page }) => {
         await page.goto('/');
