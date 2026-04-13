@@ -216,6 +216,26 @@
             .quic-grid { grid-template-columns: 1fr; }
         }
 
+        /* QUIC packet-number-space swimlane */
+        #quic-swimlane { display: none; background: #0d1117; border: 1px solid #30363d; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; font-size: 0.73rem; }
+        #quic-swimlane.visible { display: block; }
+        .qsl-row { display: grid; grid-template-columns: 72px 1fr; border-top: 1px solid #21262d; }
+        .qsl-space-badge { display: flex; align-items: center; justify-content: center; padding: 0.5rem 0.2rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-right: 2px solid; writing-mode: vertical-rl; text-orientation: mixed; }
+        .qsl-row[data-space="initial"]   .qsl-space-badge { color: #d29922; border-color: #d29922; background: rgba(210,153,34,0.06); }
+        .qsl-row[data-space="handshake"] .qsl-space-badge { color: #58a6ff; border-color: #58a6ff; background: rgba(88,166,255,0.06); }
+        .qsl-row[data-space="1rtt"]      .qsl-space-badge { color: #3fb950; border-color: #3fb950; background: rgba(63,185,80,0.06); }
+        .qsl-track { padding: 0.45rem 0.7rem; display: flex; flex-direction: column; gap: 0.3rem; justify-content: center; }
+        .qsl-arrow { display: flex; align-items: center; gap: 0.45rem; padding: 0.22rem 0.4rem; border-radius: 5px; border: 1px solid transparent; transition: opacity 0.2s; }
+        .qsl-arrow.qsl-active  { background: rgba(255,255,255,0.05); border-color: var(--space-color); opacity: 1; }
+        .qsl-arrow.qsl-visited { opacity: 0.38; }
+        .qsl-arrow.qsl-future  { opacity: 0.14; }
+        .qsl-dir   { font-size: 0.9rem; color: var(--space-color); flex-shrink: 0; }
+        .qsl-label { color: #c9d1d9; flex: 1; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.68rem; }
+        .qsl-active .qsl-label { color: #e6edf3; }
+        .qsl-badge { font-size: 0.62rem; flex-shrink: 0; }
+        .qsl-now  { color: var(--space-color); }
+        .qsl-done { color: #3fb950; }
+
         /* Controls */
         .controls { display: flex; gap: 1rem; }
         .controls button { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 0.6rem 1.5rem; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: background 0.2s; }
@@ -390,6 +410,9 @@
 
     <!-- Hex Pane -->
     <div class="ws-hex-pane" id="ws-hex"></div>
+
+    <!-- QUIC Swimlane (replaces hex pane for QUIC scenario) -->
+    <div id="quic-swimlane"></div>
 
     <!-- Decrypt Callout -->
     <div id="decrypt-callout">TLS 1.3 encrypts everything after ServerHello — without the session keys, packets 3-6 appear as opaque "Application Data."</div>
@@ -590,6 +613,7 @@
             quicPayload: document.getElementById('quic-payload'),
             quicStack: document.getElementById('quic-stack'),
             quicByteNote: document.getElementById('quic-byte-note'),
+            quicSwimlane: document.getElementById('quic-swimlane'),
         };
 
         function getScenario() {
@@ -754,6 +778,38 @@
                 byteNote: 'Under the hood, the same QUIC transport machinery that carried the handshake now carries the app payload without a separate TLS record layer.'
             },
         ];
+
+        // QUIC swimlane: one entry per on-wire arrow, ordered by step
+        const quicArrows = [
+            { step: 0, space: 'initial',   dir: 'c2s', label: 'CRYPTO [ClientHello + quic_transport_parameters]' },
+            { step: 1, space: 'initial',   dir: 's2c', label: 'CRYPTO [ServerHello]' },
+            { step: 1, space: 'handshake', dir: 's2c', label: 'CRYPTO [EE + Certificate + CertVerify + Finished]' },
+            { step: 2, space: 'handshake', dir: 'c2s', label: 'CRYPTO [Finished]' },
+            { step: 3, space: '1rtt',      dir: 'c2s', label: 'STREAM [HTTP/3 HEADERS: GET /]' },
+            { step: 4, space: '1rtt',      dir: 's2c', label: 'STREAM [HTTP/3 HEADERS: 200 OK]' },
+            { step: 5, space: '1rtt',      dir: 's2c', label: 'STREAM [HTTP/3 DATA: response body]' },
+        ];
+        const quicSpaces = [
+            { key: 'initial',   label: 'Initial',   color: '#d29922' },
+            { key: 'handshake', label: 'Handshake', color: '#58a6ff' },
+            { key: '1rtt',      label: '1-RTT',     color: '#3fb950' },
+        ];
+        function renderQuicSwimlane(idx) {
+            els.quicSwimlane.innerHTML = quicSpaces.map(sp => {
+                const arrows = quicArrows.filter(a => a.space === sp.key);
+                const rows = arrows.map(a => {
+                    const state = a.step < idx ? 'visited' : a.step === idx ? 'active' : 'future';
+                    const badge = state === 'active' ? '<span class="qsl-badge qsl-now">●</span>'
+                                : state === 'visited' ? '<span class="qsl-badge qsl-done">✓</span>' : '';
+                    return `<div class="qsl-arrow qsl-${state}" style="--space-color:${sp.color}">` +
+                        `<span class="qsl-dir">${a.dir === 'c2s' ? '→' : '←'}</span>` +
+                        `<span class="qsl-label">${a.label}</span>${badge}</div>`;
+                }).join('');
+                return `<div class="qsl-row" data-space="${sp.key}">` +
+                    `<div class="qsl-space-badge" style="color:${sp.color};border-color:${sp.color}">${sp.label}</div>` +
+                    `<div class="qsl-track">${rows}</div></div>`;
+            }).join('');
+        }
 
         // Detail pane: tree structure per row. Each node: { text, indent (0-4), type: 'layer'|'field'|'warn' }
         function T(text, indent, type) { return { text, indent: indent||0, type: type||'field' }; }
@@ -1888,18 +1944,25 @@
                 return '<div class="ws-tree-node' + indentCls + '"><span class="' + typeCls + '">' + n.text + '</span></div>';
             }).join('');
 
-            // Hex pane — columnar layout
-            const hexRows = sc.quic      ? hexQUIC[idx]
-                          : sc.alpn      ? hexALPN[idx]
-                          : sc.ocsp      ? hexOCSP[idx]
-                          : sc.freak     ? hexFREAK[idx]
-                          : sc.logjam    ? hexLogjam[idx]
-                          : isDowngrade  ? (sc.cbc ? hexDowngradeCBC : hexDowngrade)[idx]
-                          : state.keysLoaded ? hexDecrypted[idx]
-                          : hexEncrypted[idx];
-            els.wsHex.innerHTML = hexRows.map(r =>
-                '<div class="ws-hex-row"><span class="ws-hex-offset">' + r.offset + '</span><span class="ws-hex-bytes">' + r.bytes + '</span><span class="ws-hex-ascii">' + r.ascii + '</span></div>'
-            ).join('');
+            // Hex pane vs QUIC swimlane
+            if (sc.quic) {
+                els.wsHex.style.display = 'none';
+                els.quicSwimlane.classList.add('visible');
+                renderQuicSwimlane(idx);
+            } else {
+                els.wsHex.style.display = '';
+                els.quicSwimlane.classList.remove('visible');
+                const hexRows = sc.alpn      ? hexALPN[idx]
+                              : sc.ocsp      ? hexOCSP[idx]
+                              : sc.freak     ? hexFREAK[idx]
+                              : sc.logjam    ? hexLogjam[idx]
+                              : isDowngrade  ? (sc.cbc ? hexDowngradeCBC : hexDowngrade)[idx]
+                              : state.keysLoaded ? hexDecrypted[idx]
+                              : hexEncrypted[idx];
+                els.wsHex.innerHTML = hexRows.map(r =>
+                    '<div class="ws-hex-row"><span class="ws-hex-offset">' + r.offset + '</span><span class="ws-hex-bytes">' + r.bytes + '</span><span class="ws-hex-ascii">' + r.ascii + '</span></div>'
+                ).join('');
+            }
 
             // Clear messages
             els.failureMessage.classList.remove('visible');
