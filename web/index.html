@@ -701,60 +701,73 @@
             { info: '1-RTT, DATA', proto: 'HTTP/3', src: '93.184.216.34', dst: '192.168.1.10' },
         ];
 
-        const quicTeaching = [
+        // QUIC swimlane: one entry per on-wire arrow, each carries its own teaching content
+        const quicArrows = [
             {
+                step: 0, space: 'initial', dir: 'c2s', label: 'CRYPTO [ClientHello + quic_transport_parameters]',
                 summary: 'A UDP datagram carries one QUIC Initial packet. Inside it, a CRYPTO frame transports raw TLS ClientHello bytes plus QUIC transport parameters.',
                 keys: 'Initial keys — derived from the destination connection ID and the QUIC v1 initial salt before any certificate is seen.',
-                transport: 'Long-header packet setup, connection IDs, anti-amplification rules, and retransmission state all live in QUIC.',
-                payload: 'TLS ClientHello bytes ride inside a CRYPTO frame; there is no TLS record wrapper.',
+                transport: 'Long-header packet; QUIC handles connection IDs, anti-amplification rules, and retransmission state.',
+                payload: 'TLS ClientHello bytes ride inside a CRYPTO frame — there is no TLS record wrapper.',
             },
             {
-                summary: 'The server flight spans QUIC Initial and Handshake packet number spaces. ServerHello switches the crypto level, and the rest of the TLS flight is protected inside QUIC packets.',
-                keys: 'Initial keys first, then Handshake keys immediately after ServerHello. QUIC packet protection changes mid-flight.',
-                transport: 'QUIC decides packet type, ACK/retransmit behavior, and key phase transitions without TCP underneath.',
-                payload: 'CRYPTO frames carry ServerHello, EncryptedExtensions, Certificate, CertificateVerify, and Finished.',
+                step: 1, space: 'initial', dir: 's2c', label: 'CRYPTO [ServerHello]',
+                summary: 'ServerHello arrives in an Initial-space packet. After this frame, the crypto level upgrades to Handshake.',
+                keys: 'Initial keys — still protecting this frame; Handshake keys activate after ServerHello is processed.',
+                transport: 'Long-header Initial packet; QUIC coalesces the Handshake-space packets in the same UDP datagram.',
+                payload: 'ServerHello carries the selected cipher suite and server key_share; both sides derive Handshake traffic keys.',
             },
             {
-                summary: 'The client answers in the Handshake packet number space with a CRYPTO frame holding Finished. After this, both sides can send 1-RTT application data.',
-                keys: 'Handshake keys protect this packet; successful Finished verification unlocks 1-RTT keys.',
-                transport: 'QUIC confirms the handshake at the transport layer while preparing stream-carrying application packets.',
-                payload: 'TLS Finished is the last handshake message; after it, HTTP/3 data can move on QUIC streams.',
+                step: 1, space: 'handshake', dir: 's2c', label: 'CRYPTO [EE + Certificate + CertVerify + Finished]',
+                summary: 'The rest of the server flight switches to Handshake-space packets protected by freshly derived Handshake keys.',
+                keys: 'Handshake keys — derived from the key_share exchange; first packet protected by session-specific keying material.',
+                transport: 'Long-header Handshake packet; separate number space from Initial. QUIC coalesces both into one datagram.',
+                payload: 'CRYPTO frames carry EncryptedExtensions, Certificate, CertificateVerify, and Finished — the entire server auth flight.',
             },
             {
-                summary: 'The handshake is complete and HTTP/3 starts. You send a request on a QUIC stream inside a 1-RTT packet.',
-                keys: '1-RTT application keys — these protect normal request and response traffic.',
-                transport: 'QUIC provides multiplexed streams, loss recovery, ACKs, and packet protection without TCP.',
+                step: 2, space: 'handshake', dir: 'c2s', label: 'CRYPTO [Finished]',
+                summary: 'The client confirms the handshake in the Handshake packet number space. After this, both sides unlock 1-RTT keys.',
+                keys: 'Handshake keys — after Finished is verified, both sides derive 1-RTT keys and retire Handshake keys.',
+                transport: 'Long-header Handshake packet; after this exchange, QUIC discards Initial and Handshake key material.',
+                payload: 'TLS Finished is the last handshake message — it binds the entire transcript via an HMAC.',
+            },
+            {
+                step: 3, space: '1rtt', dir: 'c2s', label: 'STREAM [HTTP/3 HEADERS: GET /]',
+                summary: 'The handshake is complete. HTTP/3 requests travel in QUIC STREAM frames inside 1-RTT packets.',
+                keys: '1-RTT application keys — these protect all application traffic for the session.',
+                transport: 'Short-header 1-RTT packet; QUIC provides multiplexed streams, loss recovery, and per-packet encryption.',
                 payload: 'HTTP/3 HEADERS frame rides inside a QUIC STREAM frame — notice the shift from CRYPTO frames used during the handshake.',
             },
             {
-                summary: 'The server returns response headers in another 1-RTT packet. HTTP/3 is now application data inside QUIC.',
+                step: 4, space: '1rtt', dir: 's2c', label: 'STREAM [HTTP/3 HEADERS: 200 OK]',
+                summary: 'Response headers arrive in another 1-RTT packet. HTTP/3 rides on QUIC streams, not TLS records.',
                 keys: '1-RTT application keys remain active.',
                 transport: 'QUIC keeps stream ordering local to each stream, avoiding TCP-style cross-stream head-of-line blocking.',
                 payload: 'HTTP/3 HEADERS frame returns status and metadata inside a QUIC STREAM frame.',
             },
             {
-                summary: 'Response body bytes continue over QUIC 1-RTT packets. Reliability, congestion control, and encryption all stay inside QUIC.',
+                step: 5, space: '1rtt', dir: 's2c', label: 'STREAM [HTTP/3 DATA: response body]',
+                summary: 'Response body bytes continue over 1-RTT packets. HTTP/3 does not sit on TLS records or TCP segments.',
                 keys: '1-RTT application keys.',
                 transport: 'QUIC handles retransmission and loss recovery per packet while streams deliver ordered application bytes.',
-                payload: 'HTTP/3 DATA frame carries the response body — HTTP/3 does not sit on TLS records or TCP segments.',
+                payload: 'HTTP/3 DATA frame carries the response body inside a QUIC STREAM frame.',
             },
-        ];
-
-        // QUIC swimlane: one entry per on-wire arrow, ordered by step
-        const quicArrows = [
-            { step: 0, space: 'initial',   dir: 'c2s', label: 'CRYPTO [ClientHello + quic_transport_parameters]' },
-            { step: 1, space: 'initial',   dir: 's2c', label: 'CRYPTO [ServerHello]' },
-            { step: 1, space: 'handshake', dir: 's2c', label: 'CRYPTO [EE + Certificate + CertVerify + Finished]' },
-            { step: 2, space: 'handshake', dir: 'c2s', label: 'CRYPTO [Finished]' },
-            { step: 3, space: '1rtt',      dir: 'c2s', label: 'STREAM [HTTP/3 HEADERS: GET /]' },
-            { step: 4, space: '1rtt',      dir: 's2c', label: 'STREAM [HTTP/3 HEADERS: 200 OK]' },
-            { step: 5, space: '1rtt',      dir: 's2c', label: 'STREAM [HTTP/3 DATA: response body]' },
         ];
         const quicSpaces = [
             { key: 'initial',   label: 'Initial',   color: '#d29922' },
             { key: 'handshake', label: 'Handshake', color: '#58a6ff' },
             { key: '1rtt',      label: '1-RTT',     color: '#3fb950' },
         ];
+        function showArrowContent(arrow) {
+            els.quicSummary.textContent  = arrow.summary;
+            els.quicKeys.textContent     = arrow.keys;
+            els.quicTransport.textContent = arrow.transport;
+            els.quicPayload.textContent  = arrow.payload;
+        }
+        function defaultArrowForStep(idx) {
+            // Last active arrow in the array (deepest space, e.g. Handshake beats Initial at step 2)
+            return [...quicArrows].reverse().find(a => a.step === idx) || quicArrows[0];
+        }
         function renderQuicSwimlane(idx) {
             els.quicLanes.innerHTML = quicSpaces.map(sp => {
                 const arrows = quicArrows.filter(a => a.space === sp.key);
@@ -770,6 +783,17 @@
                     `<div class="qsl-space-badge" style="color:${sp.color};border-color:${sp.color}">${sp.label}</div>` +
                     `<div class="qsl-track">${rows}</div></div>`;
             }).join('');
+
+            // Hover: show per-lane content; mouseleave restores step default
+            const def = defaultArrowForStep(idx);
+            els.quicLanes.querySelectorAll('.qsl-row').forEach(row => {
+                row.addEventListener('mouseenter', () => {
+                    const sp = row.dataset.space;
+                    const a = [...quicArrows].reverse().find(x => x.space === sp && x.step <= idx);
+                    if (a) showArrowContent(a);
+                });
+            });
+            els.quicLanes.addEventListener('mouseleave', () => showArrowContent(def), { once: false });
         }
 
         // Detail pane: tree structure per row. Each node: { text, indent (0-4), type: 'layer'|'field'|'warn' }
@@ -1845,11 +1869,7 @@
             }
 
             if (sc.quic) {
-                const q = quicTeaching[idx];
-                els.quicSummary.textContent = q.summary;
-                els.quicKeys.textContent = q.keys;
-                els.quicTransport.textContent = q.transport;
-                els.quicPayload.textContent = q.payload;
+                showArrowContent(defaultArrowForStep(idx));
             } else {
                 els.quicSummary.textContent = '';
                 els.quicKeys.textContent = '';
