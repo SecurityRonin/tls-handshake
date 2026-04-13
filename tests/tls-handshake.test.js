@@ -1229,3 +1229,51 @@ test.describe('RFC reference accuracy', () => {
         await expect(page.locator('#ws-detail')).toContainText('Finished');
     });
 });
+
+test.describe('Attacker node visibility', () => {
+    // Scenarios that model an active on-path attacker must show the attacker endpoint in the diagram.
+    async function attackerVisible(page) {
+        return page.locator('#mitm-attacker').isVisible();
+    }
+
+    test('MITM: attacker node visible', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-mitm');
+        expect(await attackerVisible(page)).toBe(true);
+    });
+
+    test('FREAK: attacker node visible', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-freak');
+        expect(await attackerVisible(page)).toBe(true);
+    });
+
+    test('Logjam: attacker node visible', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-logjam');
+        expect(await attackerVisible(page)).toBe(true);
+    });
+
+    test('Renegotiation injection: attacker node visible', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-renego');
+        expect(await attackerVisible(page)).toBe(true);
+    });
+
+    test('Session ticket theft: attacker node visible', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-ticket-theft');
+        expect(await attackerVisible(page)).toBe(true);
+    });
+
+    test('Record tampering: attacker node visible', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-record-tamper');
+        expect(await attackerVisible(page)).toBe(true);
+    });
+
+    test('Baseline (no scenario): attacker node hidden', async ({ page }) => {
+        await page.goto('/');
+        expect(await attackerVisible(page)).toBe(false);
+    });
+});
