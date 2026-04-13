@@ -901,6 +901,49 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#ws-hex')).toBeHidden();
     });
 
+    // ── QUIC per-lane context ─────────────────────────────────────────────────
+    test('QUIC: step 1 Under The Hood shows ClientHello-specific content (connection ID)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-under-hood')).toContainText('connection ID');
+        await expect(page.locator('#quic-under-hood')).toContainText('CRYPTO frame');
+    });
+
+    test('QUIC: step 2 defaults to Handshake lane content (server auth flight)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await expect(page.locator('#quic-under-hood')).toContainText('Handshake keys');
+        await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+    });
+
+    test('QUIC: hovering Initial lane at step 2 shows Initial-specific content', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await page.hover('#quic-lanes .qsl-row[data-space="initial"]');
+        // 'crypto level upgrades' only appears in the Initial ServerHello arrow summary
+        await expect(page.locator('#quic-under-hood')).toContainText('crypto level upgrades');
+    });
+
+    test('QUIC: hovering Handshake lane at step 2 shows Handshake-specific content', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await page.hover('#quic-lanes .qsl-row[data-space="handshake"]');
+        // 'server auth flight' only appears in the Handshake server flight arrow payload
+        await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+    });
+
+    test('QUIC: mousing off lanes restores step-default content', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#next-step');
+        await page.hover('#quic-lanes .qsl-row[data-space="initial"]');
+        await page.hover('#step-indicator');
+        await expect(page.locator('#quic-under-hood')).toContainText('server auth flight');
+    });
+
     // ── 7. Session Ticket Theft ───────────────────────────────────────────────
     test('ticket-theft: radio exists', async ({ page }) => {
         await page.goto('/');
