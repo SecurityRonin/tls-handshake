@@ -1219,4 +1219,13 @@ test.describe('RFC reference accuracy', () => {
         for (let i = 0; i < 3; i++) await page.click('#next-step');
         await expect(page.locator('#ws-detail')).not.toContainText('CertificateVerify');
     });
+
+    // RFC 8446 §4.4.4: client always sends Finished, even when Certificate is empty.
+    // Finished is NOT conditional on having a certificate — only CertificateVerify is skipped.
+    test('client-auth-fail protocol tree includes client Finished message', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-client-auth-fail');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail')).toContainText('Finished');
+    });
 });
