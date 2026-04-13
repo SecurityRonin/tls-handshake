@@ -1080,7 +1080,7 @@
             T('Content Type: <span class="ws-tree-value">Alert (21)</span>', 1),
             T('▼ Alert Message', 1, 'layer'),
             T('Level: <span class="ws-tree-value">fatal (2)</span> <span class="ws-tree-warn">← handshake aborted</span>', 2, 'warn'),
-            T('Description: <span class="ws-tree-value">no_application_protocol (112)</span> <span class="ws-tree-warn">← RFC 7301 §3.3.2: server could not negotiate a common ALPN protocol</span>', 2, 'warn'),
+            T('Description: <span class="ws-tree-value">no_application_protocol (120)</span> <span class="ws-tree-warn">← RFC 7301 §3.3.2: server could not negotiate a common ALPN protocol</span>', 2, 'warn'),
             T('Client offered: <span class="ws-tree-value">h2</span>', 2),
             T('Server supports: <span class="ws-tree-value">http/1.1 only</span> <span class="ws-tree-warn">← h2 not configured; no overlap</span>', 2, 'warn'),
             T('Fix: ensure client and server share at least one ALPN protocol (e.g. both support http/1.1)', 0, 'warn'),
@@ -1328,7 +1328,18 @@
             const sc = getScenario();
             const idx = state.selectedRow;
             const isDowngrade = sc.noFs;
-            const s = sc.hrr ? stepsHRR[idx] : sc.logjam ? stepsLogjam[idx] : (isDowngrade ? stepsDowngrade[idx] : steps[idx]);
+            let s = sc.hrr ? stepsHRR[idx] : sc.logjam ? stepsLogjam[idx] : (isDowngrade ? stepsDowngrade[idx] : steps[idx]);
+
+            // ALPN: server sends fatal alert before cert flight — override step 3 content entirely
+            if (sc.alpn && idx === 2) {
+                s = { ...s,
+                    title: 'ALPN Alert',
+                    desc: 'Server responds with a fatal no_application_protocol alert (120) — RFC 7301 §3.3.2. No common ALPN protocol exists because the client offered only "h2" while the server supports only "http/1.1". The server closes the connection immediately; the certificate flight is never sent, so authentication is never established.',
+                    arrowText: 'Alert: no_application_protocol (120) [fatal]',
+                    arrowDir: 'left',
+                    activePillars: ['keyExchange'],
+                };
+            }
 
             // Update row selection — reveal rows up to current step
             rows.forEach((row, i) => {
@@ -1520,7 +1531,7 @@
 
                 // ALPN mismatch — fires at step 3, fatal alert, halts
                 if (step === certStep && sc.alpn) {
-                    els.failureMessage.textContent = 'Handshake aborted: no_application_protocol (112). The server could not find a common ALPN protocol — the client offered only "h2" but the server supports only "http/1.1". The server sent a fatal no_application_protocol alert (RFC 7301 §3.3.2). The TLS connection is closed.';
+                    els.failureMessage.textContent = 'Handshake aborted: no_application_protocol (120). The server could not find a common ALPN protocol — the client offered only "h2" but the server supports only "http/1.1". The server sent a fatal no_application_protocol alert (RFC 7301 §3.3.2). The TLS connection is closed.';
                     els.failureMessage.classList.add('visible');
                     state.halted = true;
                 }
