@@ -205,7 +205,9 @@
             #quic-swimlane.visible { flex-direction: column; }
             #quic-under-hood { width: auto; border-left: none; border-top: 1px solid #21262d; }
         }
-        .qsl-row { display: grid; grid-template-columns: 72px 1fr; border-top: 1px solid #21262d; }
+        .qsl-row { display: grid; grid-template-columns: 72px 1fr; border-top: 1px solid #21262d; cursor: pointer; }
+        .qsl-row:focus { outline: none; }
+        .qsl-row:focus-visible { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25); }
         .qsl-space-badge { display: flex; align-items: center; justify-content: center; padding: 0.5rem 0.2rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-right: 2px solid; writing-mode: vertical-rl; text-orientation: mixed; }
         .qsl-row[data-space="initial"]   .qsl-space-badge { color: #d29922; border-color: #d29922; background: rgba(210,153,34,0.06); }
         .qsl-row[data-space="handshake"] .qsl-space-badge { color: #58a6ff; border-color: #58a6ff; background: rgba(88,166,255,0.06); }
@@ -758,17 +760,45 @@
             { key: 'handshake', label: 'Handshake', color: '#58a6ff' },
             { key: '1rtt',      label: '1-RTT',     color: '#3fb950' },
         ];
+        let quicCurrentIdx = 0;
         function showArrowContent(arrow) {
-            els.quicSummary.textContent  = arrow.summary;
-            els.quicKeys.textContent     = arrow.keys;
+            els.quicSummary.textContent   = arrow.summary;
+            els.quicKeys.textContent      = arrow.keys;
             els.quicTransport.textContent = arrow.transport;
-            els.quicPayload.textContent  = arrow.payload;
+            els.quicPayload.textContent   = arrow.payload;
         }
         function defaultArrowForStep(idx) {
-            // Last active arrow in the array (deepest space, e.g. Handshake beats Initial at step 2)
+            // Last active arrow (deepest space wins at step 2: Handshake beats Initial)
             return [...quicArrows].reverse().find(a => a.step === idx) || quicArrows[0];
         }
+        function arrowForSpace(space) {
+            // Most recent arrow visible for this space at the current step
+            return [...quicArrows].reverse().find(a => a.space === space && a.step <= quicCurrentIdx);
+        }
+        // Delegated listeners — attached once, read quicCurrentIdx at call time
+        (function attachQuicLaneListeners() {
+            els.quicLanes.addEventListener('mouseover', e => {
+                const row = e.target.closest('.qsl-row');
+                if (!row) return;
+                const a = arrowForSpace(row.dataset.space);
+                if (a) showArrowContent(a);
+            });
+            els.quicLanes.addEventListener('focusin', e => {
+                const row = e.target.closest('.qsl-row');
+                if (!row) return;
+                const a = arrowForSpace(row.dataset.space);
+                if (a) showArrowContent(a);
+            });
+            const restoreDefault = e => {
+                if (!els.quicLanes.contains(e.relatedTarget)) {
+                    showArrowContent(defaultArrowForStep(quicCurrentIdx));
+                }
+            };
+            els.quicLanes.addEventListener('mouseleave', () => showArrowContent(defaultArrowForStep(quicCurrentIdx)));
+            els.quicLanes.addEventListener('focusout', restoreDefault);
+        })();
         function renderQuicSwimlane(idx) {
+            quicCurrentIdx = idx;
             els.quicLanes.innerHTML = quicSpaces.map(sp => {
                 const arrows = quicArrows.filter(a => a.space === sp.key);
                 const rows = arrows.map(a => {
@@ -779,21 +809,10 @@
                         `<span class="qsl-dir">${a.dir === 'c2s' ? '→' : '←'}</span>` +
                         `<span class="qsl-label">${a.label}</span>${badge}</div>`;
                 }).join('');
-                return `<div class="qsl-row" data-space="${sp.key}">` +
+                return `<div class="qsl-row" tabindex="0" data-space="${sp.key}">` +
                     `<div class="qsl-space-badge" style="color:${sp.color};border-color:${sp.color}">${sp.label}</div>` +
                     `<div class="qsl-track">${rows}</div></div>`;
             }).join('');
-
-            // Hover: show per-lane content; mouseleave restores step default
-            const def = defaultArrowForStep(idx);
-            els.quicLanes.querySelectorAll('.qsl-row').forEach(row => {
-                row.addEventListener('mouseenter', () => {
-                    const sp = row.dataset.space;
-                    const a = [...quicArrows].reverse().find(x => x.space === sp && x.step <= idx);
-                    if (a) showArrowContent(a);
-                });
-            });
-            els.quicLanes.addEventListener('mouseleave', () => showArrowContent(def), { once: false });
         }
 
         // Detail pane: tree structure per row. Each node: { text, indent (0-4), type: 'layer'|'field'|'warn' }
