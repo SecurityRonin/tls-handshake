@@ -5,12 +5,20 @@ test.describe('Capture fixtures', () => {
     test('generated capture manifest exists for high-value scenarios', async () => {
         const raw = fs.readFileSync('fixtures/captures/manifest.json', 'utf8');
         const manifest = JSON.parse(raw);
-        expect(Object.keys(manifest)).toEqual([
-            'freak',
-            'logjam',
+        expect(Object.keys(manifest).sort()).toEqual([
             'alpn-mismatch',
+            'client-auth-fail',
+            'freak',
+            'hostname',
+            'hrr',
+            'logjam',
+            'mitm',
+            'mtls',
             'ocsp-revoked',
+            'psk-resumption',
             'quic-http3',
+            'sni',
+            'zero-rtt',
         ]);
     });
 });
