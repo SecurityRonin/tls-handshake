@@ -641,27 +641,20 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#scenario-alpn')).toBeVisible();
     });
 
-    test('ALPN: warning at step 3 containing ALPN', async ({ page }) => {
+    test('ALPN: failure at step 3 containing no_application_protocol (fatal alert)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-alpn');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
         await expect(page.locator('#step-indicator')).toContainText('Step 3');
-        await expect(page.locator('#warning-message')).toBeVisible();
-        await expect(page.locator('#warning-message')).toContainText('ALPN');
+        await expect(page.locator('#failure-message')).toBeVisible();
+        await expect(page.locator('#failure-message')).toContainText('no_application_protocol');
     });
 
-    test('ALPN: next step is NOT disabled', async ({ page }) => {
+    test('ALPN: next step is disabled (fatal alert halts handshake)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-alpn');
         for (let i = 0; i < 2; i++) await page.click('#next-step');
-        await expect(page.locator('#next-step')).not.toBeDisabled();
-    });
-
-    test('ALPN: handshake completes (step 6 reachable)', async ({ page }) => {
-        await page.goto('/');
-        await page.click('#scenario-alpn');
-        for (let i = 0; i < 5; i++) await page.click('#next-step');
-        await expect(page.locator('#step-indicator')).toContainText('Step 6');
+        await expect(page.locator('#next-step')).toBeDisabled();
     });
 
     // ── 2. HelloRetryRequest ──────────────────────────────────────────────────

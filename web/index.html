@@ -427,7 +427,7 @@
             </div>
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-ocsp" value="ocsp">
-                <label for="scenario-ocsp">OCSP stapling failure / revoked certificate</label>
+                <label for="scenario-ocsp">Revoked certificate (OCSP staple)</label>
             </div>
             <div class="toggle-row">
                 <input type="radio" name="scenario" id="scenario-cert-pin" value="cert-pin">
@@ -1076,16 +1076,14 @@
         // New scenario protocol tree overlays
         const detailScenarioALPN = [
             T('Transport Layer Security', 0, 'layer'),
-            T('▼ TLSv1.3 Record Layer: Application Data (encrypted handshake)', 0, 'layer'),
-            T('Content Type: <span class="ws-tree-value">Application Data (23)</span> <span class="ws-tree-warn">← encrypted under handshake key</span>', 1),
-            T('▼ TLS Handshake (decrypted): EncryptedExtensions + Certificate + CertificateVerify + Finished', 1, 'layer'),
-            T('▼ EncryptedExtensions', 2, 'layer'),
-            T('▼ Extension: application_layer_protocol_negotiation (16)', 3, 'layer'),
-            T('ALPN Protocol: <span class="ws-tree-value">(empty)</span> <span class="ws-tree-warn">← no matching protocol; server returned no_application_protocol</span>', 4, 'warn'),
-            T('▼ Extension: no_application_protocol <span class="ws-tree-warn">← RFC 7301 §3.3: server could not negotiate a common protocol</span>', 3, 'warn'),
-            T('Client offered: <span class="ws-tree-value">h2, http/1.1</span>', 4),
-            T('Server supports: <span class="ws-tree-value">http/1.1 only</span> <span class="ws-tree-warn">← h2 not configured on server</span>', 4, 'warn'),
-            T('TLS handshake succeeds but HTTP/2 is not available — application must fall back to HTTP/1.1', 2, 'warn'),
+            T('▼ TLSv1.3 Record Layer: Alert', 0, 'layer'),
+            T('Content Type: <span class="ws-tree-value">Alert (21)</span>', 1),
+            T('▼ Alert Message', 1, 'layer'),
+            T('Level: <span class="ws-tree-value">fatal (2)</span> <span class="ws-tree-warn">← handshake aborted</span>', 2, 'warn'),
+            T('Description: <span class="ws-tree-value">no_application_protocol (112)</span> <span class="ws-tree-warn">← RFC 7301 §3.3.2: server could not negotiate a common ALPN protocol</span>', 2, 'warn'),
+            T('Client offered: <span class="ws-tree-value">h2</span>', 2),
+            T('Server supports: <span class="ws-tree-value">http/1.1 only</span> <span class="ws-tree-warn">← h2 not configured; no overlap</span>', 2, 'warn'),
+            T('Fix: ensure client and server share at least one ALPN protocol (e.g. both support http/1.1)', 0, 'warn'),
         ];
 
         const detailScenarioHRR = [
@@ -1458,7 +1456,7 @@
                 state.halted = true;
             }
 
-            if (step >= 4 && sc.noFs) {
+            if (step >= 4 && sc.noFs && !sc.logjam && !sc.renego) {
                 els.warningMessage.textContent = 'TLS 1.2 downgrade (no forward secrecy): RSA key exchange means all session traffic can be decrypted retroactively if the server private key is ever stolen. Note: TLS 1.3 embeds a downgrade sentinel in ServerHello.random (RFC 8446 §4.1.3) — a TLS 1.3-capable client detecting this sentinel MUST abort, so a forced downgrade is normally prevented.';
                 els.warningMessage.classList.add('visible');
             }
@@ -1520,10 +1518,11 @@
                     els.warningMessage.classList.add('visible');
                 }
 
-                // ALPN mismatch — fires at step 3 (EncryptedExtensions)
-                if (step === 3 && sc.alpn) {
-                    els.warningMessage.textContent = 'ALPN mismatch: the server could not negotiate a common application protocol. The server returned no_application_protocol in EncryptedExtensions (RFC 7301 §3.3). TLS handshake succeeds but HTTP/2 is not available — the application must fall back to HTTP/1.1 or abort at the application layer.';
-                    els.warningMessage.classList.add('visible');
+                // ALPN mismatch — fires at step 3, fatal alert, halts
+                if (step === certStep && sc.alpn) {
+                    els.failureMessage.textContent = 'Handshake aborted: no_application_protocol (112). The server could not find a common ALPN protocol — the client offered only "h2" but the server supports only "http/1.1". The server sent a fatal no_application_protocol alert (RFC 7301 §3.3.2). The TLS connection is closed.';
+                    els.failureMessage.classList.add('visible');
+                    state.halted = true;
                 }
 
                 // HelloRetryRequest — fires at step 2
@@ -1567,7 +1566,7 @@
 
                 // Record tampering — fires at step 5 (App Data), halts
                 if (step === 5 && sc.recordTamper) {
-                    els.failureMessage.textContent = 'Handshake failed: AEAD authentication tag mismatch. An attacker tampered with an application data record in transit. AES-256-GCM detected the modification via its 16-byte authentication tag — the computed tag does not match the received tag. Client sends bad_record_mac alert and aborts (RFC 8446 §6.2). This demonstrates AEAD integrity protection working as intended.';
+                    els.failureMessage.textContent = 'Connection aborted: AEAD authentication tag mismatch. The TLS handshake already completed — this failure occurs on an application data record. An attacker tampered with the record in transit. AES-256-GCM detected the modification via its 16-byte authentication tag — the computed tag does not match the received tag. Client sends a fatal bad_record_mac alert and closes the connection (RFC 8446 §6.2). This demonstrates AEAD integrity protection working as intended.';
                     els.failureMessage.classList.add('visible');
                     state.halted = true;
                 }
