@@ -1005,6 +1005,135 @@ test.describe('What-If Scenarios — New', () => {
         });
     });
 
+    // ── QUIC Raw Dissection (tshark toggle) ──────────────────────────────────
+    test('QUIC: Edu/Raw toggle is hidden by default (no scenario selected)', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#quic-detail-toggle')).toBeHidden();
+    });
+
+    test('QUIC: Edu/Raw toggle becomes visible when QUIC scenario selected', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-detail-toggle')).toBeVisible();
+    });
+
+    test('QUIC: Edu/Raw toggle hides when switching away from QUIC', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#scenario-normal');
+        await expect(page.locator('#quic-detail-toggle')).toBeHidden();
+    });
+
+    test('QUIC: Edu tab is active by default', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#quic-tab-edu')).toHaveClass(/active/);
+        await expect(page.locator('#quic-tab-raw')).not.toHaveClass(/active/);
+    });
+
+    test('QUIC: educational detail pane is visible in Edu mode', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await expect(page.locator('#ws-detail')).toBeVisible();
+        await expect(page.locator('#ws-detail-raw')).toBeHidden();
+    });
+
+    test('QUIC: clicking Raw tab shows raw pane and hides edu pane', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await expect(page.locator('#ws-detail-raw')).toBeVisible();
+        await expect(page.locator('#ws-detail')).toBeHidden();
+    });
+
+    test('QUIC: clicking Raw tab makes Raw active and Edu inactive', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await expect(page.locator('#quic-tab-raw')).toHaveClass(/active/);
+        await expect(page.locator('#quic-tab-edu')).not.toHaveClass(/active/);
+    });
+
+    test('QUIC: clicking Edu tab restores edu pane', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await page.click('#quic-tab-edu');
+        await expect(page.locator('#ws-detail')).toBeVisible();
+        await expect(page.locator('#ws-detail-raw')).toBeHidden();
+        await expect(page.locator('#quic-tab-edu')).toHaveClass(/active/);
+    });
+
+    test('QUIC: Raw pane step 1 shows QUIC Initial packet type', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Initial');
+    });
+
+    test('QUIC: Raw pane step 1 shows Client Hello', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Client Hello');
+    });
+
+    test('QUIC: Raw pane step 1 shows DCID', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await expect(page.locator('#ws-detail-raw')).toContainText('DCID');
+    });
+
+    test('QUIC: Raw pane step 2 shows Server Hello', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Server Hello');
+    });
+
+    test('QUIC: Raw pane step 2 shows Handshake packet type', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Handshake');
+    });
+
+    test('QUIC: Raw pane step 3 shows client Finished', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await page.click('#next-step');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Finished');
+    });
+
+    test('QUIC: Raw pane step 4 shows 1-RTT short header', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        for (let i = 0; i < 3; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toContainText('1-RTT');
+    });
+
+    test('QUIC: Raw pane renders as an expandable tree (has nested items)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await expect(page.locator('#ws-detail-raw .raw-tree-node')).toHaveCount({ minimum: 3 });
+    });
+
+    test('QUIC: Raw pane persists across step navigation (stays in Raw mode)', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toBeVisible();
+        await expect(page.locator('#ws-detail')).toBeHidden();
+    });
+
     // ── 7. Session Ticket Theft ───────────────────────────────────────────────
     test('ticket-theft: radio exists', async ({ page }) => {
         await page.goto('/');
