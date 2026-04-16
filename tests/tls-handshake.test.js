@@ -1020,7 +1020,7 @@ test.describe('What-If Scenarios — New', () => {
     test('QUIC: Edu/Raw toggle hides when switching away from QUIC', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
-        await page.click('#scenario-normal');
+        await page.click('#scenario-none');
         await expect(page.locator('#quic-detail-toggle')).toBeHidden();
     });
 
@@ -1078,11 +1078,11 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#ws-detail-raw')).toContainText('Client Hello');
     });
 
-    test('QUIC: Raw pane step 1 shows DCID', async ({ page }) => {
+    test('QUIC: Raw pane step 1 shows Destination Connection ID', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await page.click('#quic-tab-raw');
-        await expect(page.locator('#ws-detail-raw')).toContainText('DCID');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Destination Connection ID');
     });
 
     test('QUIC: Raw pane step 2 shows Server Hello', async ({ page }) => {
@@ -1110,19 +1110,19 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#ws-detail-raw')).toContainText('Finished');
     });
 
-    test('QUIC: Raw pane step 4 shows 1-RTT short header', async ({ page }) => {
+    test('QUIC: Raw pane step 4 shows Short Header (1-RTT)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await page.click('#quic-tab-raw');
         for (let i = 0; i < 3; i++) await page.click('#next-step');
-        await expect(page.locator('#ws-detail-raw')).toContainText('1-RTT');
+        await expect(page.locator('#ws-detail-raw')).toContainText('Short Header');
     });
 
-    test('QUIC: Raw pane renders as an expandable tree (has nested items)', async ({ page }) => {
+    test('QUIC: Raw pane renders verbatim tshark text (has QUIC IETF header)', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await page.click('#quic-tab-raw');
-        await expect(page.locator('#ws-detail-raw .raw-tree-node')).toHaveCount({ minimum: 3 });
+        await expect(page.locator('#ws-detail-raw')).toContainText('QUIC IETF');
     });
 
     test('QUIC: Raw pane persists across step navigation (stays in Raw mode)', async ({ page }) => {
