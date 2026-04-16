@@ -78,17 +78,36 @@ def get_frame_summary(pcap: Path, keys: Path, frame_no: int) -> str:
     return f"Frame {frame_no}"
 
 
-def map_frame_to_step(frame_text: str, frame_no: int, step_slots: list) -> int | None:
-    """Return which educational step this frame fills, or None."""
-    text = frame_text
+def map_frame_to_step(frame_text: str, frame_summary: str, step_slots: list) -> int | None:
+    """Return which educational step this frame fills, or None.
 
-    has_initial = "Packet Type: Initial" in text
+    Step mapping:
+      0 — ClientHello (QUIC Initial + CRYPTO)
+      1 — Server flight (ServerHello + EE + Cert + CertVerify + Finished)
+      2 — Client Finished (Handshake ACK + Finished, no CertVerify)
+      3 — HTTP/3 GET request
+      4 — HTTP/3 200 response
+      5 — CONNECTION_CLOSE (end of session)
+    """
+    text = frame_text
+    summary = frame_summary
+
+    has_initial       = "Packet Type: Initial" in text
     has_handshake_pkt = "Packet Type: Handshake" in text
-    has_short = "Header Form: Short" in text or ("Short Header" in text and "Long Header" not in text)
-    has_client_hello = "Client Hello" in text and "Handshake Type: Client Hello" in text
-    has_server_hello = "Handshake Type: Server Hello" in text
-    has_certificate = "Handshake Type: Certificate" in text and "Certificate Verify" in text
-    has_client_fin = has_handshake_pkt and "Handshake Type: Finished" in text and not has_server_hello
+    has_client_hello  = "Handshake Type: Client Hello" in text
+    has_server_hello  = "Handshake Type: Server Hello" in text
+    has_cert_verify   = "Certificate Verify" in text   # server-side; present in server flight continuation
+    has_finished      = "Handshake Type: Finished" in text
+
+    # Client Finished: Handshake-space packet with Finished but NOT CertVerify
+    # (CertVerify marks the server-flight continuation frames, not the client Finished)
+    has_client_fin = (has_handshake_pkt and has_finished
+                      and not has_server_hello and not has_cert_verify)
+
+    # App-data classification uses the tshark summary line (more reliable than verbose text)
+    is_get_request  = "GET" in summary
+    is_200_response = "200" in summary or ":status 200" in text
+    is_conn_close   = ", CC" in summary or "CONNECTION_CLOSE" in text
 
     if step_slots[0] is None and has_initial and has_client_hello:
         return 0
@@ -96,10 +115,12 @@ def map_frame_to_step(frame_text: str, frame_no: int, step_slots: list) -> int |
         return 1
     if step_slots[2] is None and has_client_fin:
         return 2
-    if has_short:
-        for i in range(3, 6):
-            if step_slots[i] is None:
-                return i
+    if step_slots[3] is None and is_get_request:
+        return 3
+    if step_slots[4] is None and is_200_response:
+        return 4
+    if step_slots[5] is None and is_conn_close:
+        return 5
     return None
 
 
@@ -249,7 +270,7 @@ def main() -> None:
         for frame_no in range(1, total + 1):
             text = get_frame_text(PCAP, KEYS, frame_no)
             summary = get_frame_summary(PCAP, KEYS, frame_no)
-            step = map_frame_to_step(text, frame_no, step_slots)
+            step = map_frame_to_step(text, summary, step_slots)
             if step is not None:
                 step_slots[step] = {
                     "step": step,
