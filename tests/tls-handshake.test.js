@@ -1101,21 +1101,38 @@ test.describe('What-If Scenarios — New', () => {
         await expect(page.locator('#ws-detail-raw')).toContainText('Handshake');
     });
 
-    test('QUIC: Raw pane step 3 shows client Finished', async ({ page }) => {
+    test('QUIC: Raw pane step 3 shows client Finished without Certificate Verify', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await page.click('#quic-tab-raw');
         await page.click('#next-step');
         await page.click('#next-step');
         await expect(page.locator('#ws-detail-raw')).toContainText('Finished');
+        await expect(page.locator('#ws-detail-raw')).not.toContainText('Certificate Verify');
     });
 
-    test('QUIC: Raw pane step 4 shows Short Header (1-RTT)', async ({ page }) => {
+    test('QUIC: Raw pane step 4 shows HTTP/3 GET request', async ({ page }) => {
         await page.goto('/');
         await page.click('#scenario-quic');
         await page.click('#quic-tab-raw');
         for (let i = 0; i < 3; i++) await page.click('#next-step');
-        await expect(page.locator('#ws-detail-raw')).toContainText('Short Header');
+        await expect(page.locator('#ws-detail-raw')).toContainText('GET');
+    });
+
+    test('QUIC: Raw pane step 5 shows HTTP/3 200 response', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        for (let i = 0; i < 4; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toContainText('200');
+    });
+
+    test('QUIC: Raw pane step 6 shows connection close', async ({ page }) => {
+        await page.goto('/');
+        await page.click('#scenario-quic');
+        await page.click('#quic-tab-raw');
+        for (let i = 0; i < 5; i++) await page.click('#next-step');
+        await expect(page.locator('#ws-detail-raw')).toContainText('CONNECTION_CLOSE');
     });
 
     test('QUIC: Raw pane renders verbatim tshark text (has QUIC IETF header)', async ({ page }) => {
